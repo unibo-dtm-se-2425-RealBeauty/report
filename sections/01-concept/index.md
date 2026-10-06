@@ -35,7 +35,7 @@ Occasionally and in short sessions: typically when choosing or changing a produc
 Through a web browser, on a computer or a phone. The page has a single-column layout and does not need an account or an installation. The barcode is typed (the user reads it under the bars); the label can be photographed with the phone camera and uploaded. Developers use any HTTP client.
 
 **Does the system store users' data? Which data? Where?**
-Yes, only a minimal history. For every analysis the system saves the barcode (if any), the product name, the brand, the score, the summary and the date and time, in a small database on the machine where the application runs. Uploaded photos are not stored. There are no user accounts, so the history is shared by everyone who uses that installation.
+Yes, a history of the analyses. For every analysis the system saves the barcode (if any), the product name, the brand, the ingredient list that was analysed, the score, the summary, the flagged and beneficial ingredients, and the date and time, in a small database on the machine where the application runs. Uploaded photos are not stored: only the text read from them is. The history list returned by the API shows the most recent analyses first, with a subset of these fields. There are no user accounts, so the history is shared by everyone who uses that installation.
 
 **Which external services does it depend on?**
 - *Open Beauty Facts*: a free, community-maintained database, used to find the name, brand and ingredients of a product from its barcode. Many products are missing or have no ingredient list, which is why the manual and photo inputs exist.
