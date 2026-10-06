@@ -44,7 +44,7 @@ After solving these problems, the releases (1.0.0 to 1.2.1) were produced by the
 
 ## How I used the AI assistant
 
-I used Claude as a coding assistant to work faster. I wrote some parts of the code myself and asked Claude to check them, and the corrections were then made together with it; other parts were developed in a dialogue, where I asked for explanations of what each step did. I also asked it whether my tests were complete and whether I was reading the results correctly, for example the coverage report. The drafts of this report were prepared with its help too.
+I used Claude as an assistant during the whole project. I discussed with it the design choices (for example the architecture and the scoring rule), and I asked it to explain what each step of the code did. I wrote some parts of the code myself and asked Claude to check them, and the corrections were then made together with it; other parts were written in a dialogue with it, and I tested and corrected them. I also asked it whether my tests were complete and whether I was reading the results correctly, for example the coverage report. The diagrams were written with it as text (Mermaid and Graphviz) and rendered to images, and the text of this report was drafted with its help and then revised by me.
 
 The decisions, the checking of the results (running the tests, trying the application with real barcodes and photos, comparing the text of the report with the real code and configuration) and the final choice of what was kept were made by me. The details of this use are given at the beginning of the report.
 
