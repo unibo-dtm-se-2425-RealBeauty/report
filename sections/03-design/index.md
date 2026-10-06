@@ -6,94 +6,134 @@ nav_order: 4
 
 # Design
 
-This chapter explains the strategies used to meet the requirements identified in the analysis. 
+## Architecture
 
-Ideally, the design should be the same, regardless of the technological choices made during the implementation phase.
+**Architectural style: layered (3 layers), in a client-server setting.**
 
-> You can re-order the sections as you prefer, but all the sections must be present in the end
+RealBeauty is a web application. The browser is the client, a single Flask server is the server, and the server code is split into three layers. Each layer only talks to the layer right below it.
 
-## Architecture 
+![Architecture of RealBeauty](../../pictures/design-architecture.png)
 
-- Which architectural style (e.g. layered, object-based, event-based, shared dataspace)? Why? Why not the others?
-- Provide details about the actual architecture (e.g. N-tier, hexagonal, etc.) you are going to adopt. Motivate your choice.
-- Provide a high-level overview of the architecture, possibly with a diagram
-- Describe the responsibilities of each architectural component
+| Layer | What it does | Code |
+|-------|--------------|------|
+| 1. Presentation | Shows the input form and the result (score, summary, ingredient lists). | `templates/index.html` |
+| 2. Application logic | Receives requests, checks the input, decides the order of the steps, returns clear errors (400, 404, 422, 503). | `app.py` |
+| 3. Data and integration | Talks to everything outside: Open Beauty Facts (`beauty_api.py`), the AI models (`analyzer.py`) and the database (`database.py`). | three modules |
 
-> UML Components diagrams are welcome here
+**Why a layered style?**
 
-## Infrastructure (mostly applies to distributed systems)
+- The system is a simple chain: the user sends a request, the server does a few steps one after the other (find the product, judge the ingredients, save the result) and sends one answer back. A layered structure matches this directly.
+- Each outside service sits in its own module in layer 3. If we change the AI model or the product database, only that module changes.
+- In the tests, layer 3 is replaced by fakes, so the tests need no network and no API key (see [Validation](../05-validation/)).
 
-- Are there **infrastructural components** that need to be introduced? Which and **how many** of each?
-    - e.g. **clients**, **servers**, **load balancers**, **caches**, **databases**, **message brokers**, **queues**, **workers**, **proxies**, **firewalls**, **CDNs**, etc.
-- How do components **distribute** over the network? **Where** are they located?
-    - e.g. do servers / brokers / databases / etc. sit on the same machine? on the same network? on the same datacenter? on the same continent?
-- How do components **find** each other?
-    - How to **name** components?
-    - e.g. **DNS**, **service discovery**, **load balancing**, etc.
+**Why not the other styles?**
 
-> UML deployment diagrams are welcome here
+| Style | Why we did not use it |
+|-------|-----------------------|
+| Object-based | The domain is tiny (one stored entity). Splitting it into many collaborating objects would add code without benefit. |
+| Event-based / message queues | Nothing has to happen "later" or in the background. The user waits for the result, so a broker and workers would only add cost and failure points. |
+| Shared dataspace | Our components do not cooperate by reading and writing a common space. They call each other in a fixed order. |
+| Service-oriented / microservices | There is one small application and one developer. Splitting it into services would add networking and deployment work and solve no problem we have. |
+| Hexagonal (ports and adapters) | Very close to what we did, but we have no explicit "port" interfaces. There is only one implementation of each adapter, so a plain layered structure is simpler. |
+
+**Versioning.** All analysis routes live under `/api/v1`. A future incompatible change can be published as `/api/v2` while `/api/v1` keeps working (FR15).
+
+## Infrastructure
+
+The system runs as **one server process**.
+
+| Component | How many | Notes |
+|-----------|----------|-------|
+| Browser (client) | any | On the user's phone or computer. |
+| Flask server | 1 | Serves the page and the API. |
+| SQLite database | 1 | A file next to the server, no database server. |
+| Open Beauty Facts | 1, external | Public service, not under our control. |
+| OpenRouter (and the AI providers behind it) | 1, external | Free models. |
+
+We did not add load balancers, caches, queues or workers. The expected load is a few requests per user per day, so they would add complexity and solve nothing.
+
+The server and the database file are on the same machine. The browser reaches the server over HTTP (by default `http://127.0.0.1:5000`). The server reaches the two external services over HTTPS; their addresses are fixed in the code. The OpenRouter key is read from a `.env` file on the server and is never published.
+
+![Deployment of RealBeauty](../../pictures/design-deployment.png)
 
 ## Modelling
 
 ### Domain driven design (DDD) modelling
 
-- Which are the bounded contexts of your domain? 
-- Which are domain concepts (entities, value objects, aggregates, etc.) for each context?
-- Are there repositories, services, or factories for each/any domain concept?
-- What are the relavant domain events in each context?
+The domain is small, so we kept the modelling light. We identified three **bounded contexts**:
 
-> Context map diagrams are welcome here
+| Context | About | Main concepts |
+|---------|-------|---------------|
+| Product Lookup | Finding a product from its barcode. | *Product* (name, brand, ingredient list). |
+| Ingredient Assessment | Judging an ingredient list. | *Assessment* (score, summary, beneficial ingredients), *Flagged ingredient* (name, reason, severity). |
+| Analysis History | Remembering past analyses. | *Analysis*: the stored record, and the aggregate root. |
+
+- The *Analysis* has a repository: the functions in `database.py` (`save_analysis`, `get_history`).
+- `beauty_api.py` and `analyzer.py` also translate outside data into our own concepts, so outside formats do not spread into the rest of the code (an *anti-corruption layer*).
+- Domain events (*product found*, *assessment completed*, *analysis saved*) exist only as steps of one request, not as event objects.
+- The scoring rule (start at 100, subtract 20, 10 or 3 per ingredient by severity, add 2 per beneficial one) is written in the AI prompt and applied by the model. The code does not recompute it. This keeps the code small, but the score is only as consistent as the model (see [Self-evaluation](../11-selfevaluation/)).
+
+![Context map](../../pictures/design-contextmap.png)
 
 ### Object-oriented modelling
 
-- What are the main data types (e.g. classes) of the system?
-- What are the main attributes and methods of each data type?
-- How do data types relate to each other?
+The code is made of modules with functions. The only class is the stored *Analysis*. *Product* and *Assessment* are passed between modules as dictionaries; the figure shows their structure.
 
-> UML class diagrams are welcome here
+![Main data types and modules](../../pictures/design-classes.png)
 
-### In case of a distributed system
+### Distributed system aspects
 
-- How do the domain concepts map to the architectural or infrastuctural components?
-    + i.e. which architectural/component is responsible for which domain concept?
-    + are there data types which are required onto multiple components? (e.g. messages being exchanged between components)
+| Concept | Created by |
+|---------|-----------|
+| Product | the catalogue client, from Open Beauty Facts data |
+| Assessment | the AI client, from the model's answer |
+| Analysis | the database module, at the end of a successful request |
 
-- What are the domain concepts or data types which represent the state of the distributed system?
-    + e.g. state of a video game on central server, while inputs/representations on clients
-    + e.g. where to store messages in an instant-messaging app? for how long?
+The only lasting state is the saved analyses, in the database file. The server keeps nothing between requests (no sessions, no users).
 
-- Are there domain concepts or data types which represent messages being exchanged between components?
-    + e.g. messages between clients and servers, messages between servers, messages between clients
+Messages:
+
+- Browser to server: JSON with `barcode` and/or `ingredients`, or a form with a `photo`.
+- Server to browser: JSON with `product_name`, `brand`, `score`, `summary`, `flagged`, `safe_highlights`; or an error with `error` and `message`.
+- Server to Open Beauty Facts: a request for one barcode.
+- Server to the AI service: a chat request with the prompt (and the image, for a photo).
 
 ## Interaction
 
-- How do components *communicate*? *When*? *What*?
+All communication is **synchronous request-reply** over HTTP. The browser sends a request and waits, showing a progress bar. The server calls the product database, then the AI service, then replies.
 
-- Which **interaction patterns** do they enact?
+![Sequence diagram: analysis from a barcode](../../pictures/design-sequence.png)
 
-> UML sequence diagrams are welcome here
+- **Manual ingredients:** the barcode lookup is skipped.
+- **Photo:** the server first asks an image-capable model to read the ingredient list, then analyses the text as above.
+- **History:** `GET /api/v1/history` returns the saved analyses. The web page does not use it yet.
+
+| Code | Meaning | When |
+|------|---------|------|
+| 200 | Result | Analysis completed. |
+| 400 | Missing input | No barcode, no ingredients, or no photo. |
+| 404 | `not_found` | Unknown barcode or no ingredients, and none typed. |
+| 422 | Unreadable photo | The text read from the photo is empty. |
+| 503 | `ai_failed` | The AI could not answer, even after retries. |
 
 ## Behaviour
 
-- How does **each** component *behave* individually (e.g., in *response* to *events* or messages)?
-    + Some components may be *stateful*, others *stateless*
+The page, the API layer and the two clients are **stateless**; only the database is **stateful**. Only the API layer changes the state, and only **after** the AI analysis has succeeded, so a failed request leaves nothing in the database.
 
-- Which components are in charge of updating the **state** of the system? *When*? *How*?
+![Activity diagram: analysis request](../../pictures/design-activity_analyze.png)
 
-> UML state diagrams or activity diagrams are welcome here
+Free AI models are often busy, so the AI client does not give up at the first failure. It retries, then moves to the next model in a list, and reports an error only when all have failed.
 
-## Data-related aspects (in case persistent storage is needed)
+![Activity diagram: calling the AI with retries and fallback](../../pictures/design-activity_ai.png)
 
-- Is there any data that needs to be stored?
-    - *What* data? *Where*? *Why*?
+The web page is always in one of four situations: waiting for input; waiting for an answer (progress bar, results hidden); showing a result (inputs cleared); showing an error (inputs kept, so the user can retry).
 
-- How should **persistent data** be **stored**? Why?
-    - e.g., relations, documents, key-value, graph, etc.
+## Data-related aspects
 
-- Which components perform queries on the database?
-    - *When*? *Which* queries? *Why*?
-    - Concurrent read? Concurrent write? Why?
+**What is stored.** One record per completed analysis, in a SQLite file: barcode (if any), product name, brand, the analysed ingredients, score, summary, flagged and beneficial ingredients, and creation time (UTC). The purpose is to let users review past analyses (US9). Photos are not stored.
 
-- Is there any data that needs to be shared between components?
-    - *Why*? *What* data?
+**Why SQLite.** The data are flat records that are only added and listed. SQLite needs no server and no configuration, which suits one machine and one user. The ingredient lists are kept as text inside the record because they are only displayed, never queried. Currently they are saved as the text form of a Python list, not strict JSON; a future version should store real JSON (see [Future works](../12-future/)).
 
+**Operations.** One insert after each successful analysis, and one read of the whole history, newest first (no paging, since the data are small). Each operation opens and closes its own database session. SQLite serialises writers, which is enough for a few users.
+
+No data are shared between components at run time: the analysis passes along as an in-memory value during a request and is stored once at the end.

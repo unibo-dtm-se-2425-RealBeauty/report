@@ -50,7 +50,7 @@ Three kinds of users are considered.
 | FR13 | If the analysis cannot be completed because the AI service is unavailable, the system shall tell the user to try again later. | US8 |
 | FR14 | The system shall save every completed analysis (barcode if any, product name, brand, the ingredient list analysed, score, summary, flagged and beneficial ingredients, date and time) and allow the saved analyses to be listed, most recent first. | US9 |
 | FR15 | The system shall expose all its functions through an HTTP API whose address contains a version number. | US10 |
-| FR16 | The system shall offer a single web page from which a user can use all the functions above. | US1-US9 |
+| FR16 | The system shall offer a single web page from which a user can run an analysis in any of the three ways (FR1-FR13); the saved analyses (FR14) are available through the API. | US1-US8 |
 
 ### Non-functional requirements
 
