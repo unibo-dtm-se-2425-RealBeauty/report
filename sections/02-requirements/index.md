@@ -90,7 +90,7 @@ Three kinds of users are considered.
 
 ## Acceptance criteria
 
-Each criterion says how we decide that the requirement is met. The last column says how it is checked: by an automated test (name of the test, see [Validation](../05-validation/)) or by a manual test.
+Each criterion says how it is decided that the requirement is met. The last column says how it is checked: by an automated test (name of the test, see [Validation](../05-validation/)) or by a manual test.
 
 | Req. | Acceptance criterion | Checked by |
 |------|----------------------|------------|

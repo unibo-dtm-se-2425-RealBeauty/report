@@ -23,18 +23,18 @@ RealBeauty is a web application. The browser is the client, a single Flask serve
 **Why a layered style?**
 
 - The system is a simple chain: the user sends a request, the server does a few steps one after the other (find the product, judge the ingredients, save the result) and sends one answer back. A layered structure matches this directly.
-- Each outside service sits in its own module in layer 3. If we change the AI model or the product database, only that module changes.
+- Each outside service sits in its own module in layer 3. If the AI model or the product database is changed, only that module changes.
 - In the tests, layer 3 is replaced by fakes, so the tests need no network and no API key (see [Validation](../05-validation/)).
 
 **Why not the other styles?**
 
-| Style | Why we did not use it |
+| Style | Why it was not used |
 |-------|-----------------------|
 | Object-based | The domain is tiny (one stored entity). Splitting it into many collaborating objects would add code without benefit. |
 | Event-based / message queues | Nothing has to happen "later" or in the background. The user waits for the result, so a broker and workers would only add cost and failure points. |
-| Shared dataspace | Our components do not cooperate by reading and writing a common space. They call each other in a fixed order. |
-| Service-oriented / microservices | There is one small application and one developer. Splitting it into services would add networking and deployment work and solve no problem we have. |
-| Hexagonal (ports and adapters) | Very close to what we did, but we have no explicit "port" interfaces. There is only one implementation of each adapter, so a plain layered structure is simpler. |
+| Shared dataspace | The components do not cooperate by reading and writing a common space. They call each other in a fixed order. |
+| Service-oriented / microservices | There is one small application and one developer. Splitting it into services would add networking and deployment work and solve no real problem. |
+| Hexagonal (ports and adapters) | Very close to the chosen structure, but there are no explicit "port" interfaces. There is only one implementation of each adapter, so a plain layered structure is simpler. |
 
 **Versioning.** All analysis routes live under `/api/v1`. A future incompatible change can be published as `/api/v2` while `/api/v1` keeps working (FR15).
 
@@ -47,10 +47,10 @@ The system runs as **one server process**.
 | Browser (client) | any | On the user's phone or computer. |
 | Flask server | 1 | Serves the page and the API. |
 | SQLite database | 1 | A file next to the server, no database server. |
-| Open Beauty Facts | 1, external | Public service, not under our control. |
+| Open Beauty Facts | 1, external | Public service, not controlled by the project. |
 | OpenRouter (and the AI providers behind it) | 1, external | Free models. |
 
-We did not add load balancers, caches, queues or workers. The expected load is a few requests per user per day, so they would add complexity and solve nothing.
+Load balancers, caches, message queues and workers were deliberately left out. The expected load is a few requests per user per day, so they would add complexity and solve nothing.
 
 The server and the database file are on the same machine. The browser reaches the server over HTTP (by default `http://127.0.0.1:5000`). The server reaches the two external services over HTTPS; their addresses are fixed in the code. The OpenRouter key is read from a `.env` file on the server and is never published.
 
@@ -60,7 +60,7 @@ The server and the database file are on the same machine. The browser reaches th
 
 ### Domain driven design (DDD) modelling
 
-The domain is small, so we kept the modelling light. We identified three **bounded contexts**:
+The domain is small, so the modelling was kept light. Three **bounded contexts** were identified:
 
 | Context | About | Main concepts |
 |---------|-------|---------------|
@@ -69,7 +69,7 @@ The domain is small, so we kept the modelling light. We identified three **bound
 | Analysis History | Remembering past analyses. | *Analysis*: the stored record, and the aggregate root. |
 
 - The *Analysis* has a repository: the functions in `database.py` (`save_analysis`, `get_history`).
-- `beauty_api.py` and `analyzer.py` also translate outside data into our own concepts, so outside formats do not spread into the rest of the code (an *anti-corruption layer*).
+- `beauty_api.py` and `analyzer.py` also translate outside data into the concepts of the application, so outside formats do not spread into the rest of the code (an *anti-corruption layer*).
 - Domain events (*product found*, *assessment completed*, *analysis saved*) exist only as steps of one request, not as event objects.
 - The scoring rule (start at 100, subtract 20, 10 or 3 per ingredient by severity, add 2 per beneficial one) is written in the AI prompt and applied by the model. The code does not recompute it. This keeps the code small, but the score is only as consistent as the model (see [Self-evaluation](../11-selfevaluation/)).
 
