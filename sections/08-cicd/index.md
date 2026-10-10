@@ -55,4 +55,4 @@ The application's own key for the AI service is **not** a secret of the pipeline
 
 **Other automation.** The file `renovate.json` configures a bot that proposes updates of the dependencies. GitHub's dependency alerts are also active (see the open points in [Self-evaluation](../11-selfevaluation/)). The report repository has no pipeline of its own: GitHub Pages builds the website from the Markdown files at every push to `main`.
 
-**Status.** A badge in the README shows whether the last run of the pipeline succeeded. At the time of writing, all stages are green and four releases (1.0.0 to 1.2.1) were produced by it.
+**Status.** A badge in the README shows whether the last run of the pipeline succeeded. At the time of writing, all stages are green and six releases (1.0.0 to 1.3.1) were produced by it.

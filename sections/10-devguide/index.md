@@ -44,7 +44,7 @@ The server has to be restarted after each change of the code, because the automa
 | `artifact/app.py` | Flask application and routes (blueprint `api_v1`, prefix `/api/v1`). |
 | `artifact/analyzer.py` | Calls to the AI models: analysis, reading of photos, retries and fallback. The lists `TEXT_MODELS` and `VISION_MODELS` and the timeouts are at the top of the file. |
 | `artifact/beauty_api.py` | Client of Open Beauty Facts. |
-| `artifact/database.py` | SQLite database and the `Analysis` table. |
+| `artifact/database.py` | SQLite database, the `Analysis` table, and the lookup of saved results (`find_cached_analysis`). |
 | `templates/index.html` | The whole web interface (HTML, CSS and JavaScript). |
 | `tests/` | One test file per module. |
 | `pyproject.toml` | Dependencies and the `poe` tasks. |
@@ -83,10 +83,11 @@ poetry run poe coverage
 
 - A new HTTP route goes in `app.py`, on the `api_v1` blueprint. A route that changes the behaviour of an existing one in an incompatible way requires a new version (`/api/v2`).
 - Everything that talks to an outside service goes in its own module (like `beauty_api.py` and `analyzer.py`), not in `app.py`. The API layer only coordinates.
-- A change to the stored data goes in `database.py`. Note that the database file is not migrated: when the table changes, an existing `realbeauty.db` must be deleted or adapted.
+- A change to the stored data goes in `database.py`. Note that the database file is not migrated: when the table changes, an existing `realbeauty.db` must be deleted or adapted. When the format of a field changes, the reading code should still accept the old format, as `parse_list` does for the lists saved before 1.3.0.
+- The reuse of saved results is in `analyze_with_cache` (`app.py`). A change to how an analysis is produced (for example a new prompt or scoring rule) makes old saved results out of date; in that case the saved records should be deleted, or the lookup restricted to newer records.
 - To use other AI models, only the lists in `analyzer.py` need to be changed. The free models available on OpenRouter change often.
 
-**Tests.** Every new behaviour needs a test in `tests/`. Outside services are never called in tests: the functions that call them are replaced with `unittest.mock.patch` (see the existing tests for examples). A test should be named after the behaviour it checks, for example `test_analyze_barcode_not_found_returns_404`. The minimum coverage is 70%, and the current value is higher (see [Validation](../05-validation/)).
+**Tests.** Every new behaviour needs a test in `tests/`. Outside services are never called in tests: the functions that call them are replaced with `unittest.mock.patch` (see the existing tests for examples). The tests never use the real `realbeauty.db`: `test_app.py` replaces the database functions, and `test_database.py` uses a new in-memory SQLite database in each test. A test should be named after the behaviour it checks, for example `test_analyze_barcode_not_found_returns_404`. The minimum coverage is 70%, and the current value is higher (see [Validation](../05-validation/)).
 
 **Commit messages.** [Conventional Commits](https://www.conventionalcommits.org/): `type: short description in the imperative`, for example `fix: retry when the AI provider is overloaded`. The type matters, because it decides the next version:
 
@@ -107,6 +108,7 @@ The project itself was developed directly on `master`, as described in [Developm
 3. Commit with a Conventional Commits message and push the branch.
 4. Open a pull request towards `master` and wait for the pipeline to be green.
 5. After the merge, the pipeline runs on `master`. If the commits justify it, a new version is published automatically (see [Release](../06-release/)): no manual tagging or uploading is needed.
+6. Run `git pull` after each release: the pipeline adds its own `chore(release)` commit, and a later push is rejected until the local copy has it.
 
 Secrets (`PYPI_TOKEN`, `RELEASE_TOKEN`) are configured in the repository settings and must never be written in the code. The `.env` file is excluded from Git; if a key is ever committed by mistake, it has to be revoked in OpenRouter and replaced, because removing the commit is not enough.
 

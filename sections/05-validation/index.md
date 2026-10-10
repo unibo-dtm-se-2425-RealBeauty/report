@@ -18,7 +18,7 @@ The tests run automatically on every push (see [CI/CD](../08-cicd/)): first on U
 
 ## Testing (automated)
 
-The suite has **24 tests, and all of them pass**. The tests are in the `tests` folder, one file per module of the application. The requirement each test checks is given in the tables below and, from the requirement side, in the acceptance-criteria table of [Requirements](../02-requirements/).
+The suite has **33 tests, and all of them pass**. The tests are in the `tests` folder, one file per module of the application. The requirement each test checks is given in the tables below and, from the requirement side, in the acceptance-criteria table of [Requirements](../02-requirements/).
 
 **Test doubles.** `unittest.mock.patch` replaces functions of the application and of the `requests` library for the time of one test.
 
@@ -61,7 +61,7 @@ The unit tests check each client module alone. The outside world is replaced, so
 
 ### Integration testing
 
-**`tests/test_app.py` (10 tests): the API layer with the web framework.** These tests send requests to the application through Flask's test client, so routing, input checking, JSON answers and status codes run for real. The three modules of the lowest layer (`get_product_by_barcode`, `analyze_ingredients`, `extract_ingredients_from_image`) and the database functions (`save_analysis`, `get_history`) are replaced by stubs or mocks. What is tested is therefore the coordination done by the API layer: which step comes next, what is returned, and which error is reported.
+**`tests/test_app.py` (14 tests): the API layer with the web framework.** These tests send requests to the application through Flask's test client, so routing, input checking, JSON answers and status codes run for real. The three modules of the lowest layer (`get_product_by_barcode`, `analyze_ingredients`, `extract_ingredients_from_image`) and the database functions (`save_analysis`, `get_history`, `find_cached_analysis`) are replaced by stubs or mocks. By default the lookup of saved results returns nothing, so every test starts as if the product were new. What is tested is therefore the coordination done by the API layer: which step comes next, what is returned, and which error is reported.
 
 | Test | What it checks | Requirement |
 |------|----------------|-------------|
@@ -74,13 +74,29 @@ The unit tests check each client module alone. The outside world is replaced, so
 | `test_analyze_photo_without_file_returns_400` | A photo request without a file is refused. | FR12 |
 | `test_analyze_photo_success` | A photo gives a score and product name "Photo Entry". | FR5 |
 | `test_analyze_photo_unreadable_returns_422` | A photo from which nothing can be read gives an error. | FR6 |
-| `test_history_returns_saved_analyses` | The history route returns the saved analyses as JSON. | FR14 |
+| `test_history_returns_saved_analyses` | The history route returns the saved analyses as JSON, with the input method and the flagged and beneficial ingredients. | FR14 |
+| `test_history_shows_method_for_photo_and_manual` | Photo and typed entries are told apart, and an unreadable stored list is shown as empty instead of breaking the page. | FR14 |
+| `test_history_shows_each_product_once` | When a list was saved twice, only the newest result is returned. | FR14 |
+| `test_analyze_reuses_cached_result` | A saved result is returned with `cached` true; the AI is not called and nothing new is saved (mocks). | FR17 |
+| `test_analyze_new_result_is_not_cached` | A new analysis is returned with `cached` false. | FR17 |
 
 All routes are called under `/api/v1`, so the tests also confirm the versioned address (FR15).
 
-**Result:** 10 of 10 integration tests pass. Coverage of `app.py`: 90%.
+**Result:** 14 of 14 tests in this file pass. Coverage of `app.py`: 93%.
 
-**What is not covered.** No automated test connects two *real* modules, for example the API layer with the real database. As a result, `database.py` is the least covered module (74%): its functions that really write to and read from SQLite are only run indirectly. This is a known gap, listed in [Self-evaluation](../11-selfevaluation/).
+**`tests/test_database.py` (5 tests): the storage module with a real database.** These tests do not replace the database: each one runs against a new, empty SQLite database kept in memory, so the real SQL queries and the real conversion of the stored lists are executed, while the `realbeauty.db` file of the user is never touched.
+
+| Test | What it checks | Requirement |
+|------|----------------|-------------|
+| `test_normalize_removes_extra_spaces` | Extra spaces and line breaks are removed from an ingredient list. | FR17 |
+| `test_find_cached_returns_none_when_not_saved` | A list never analysed has no saved result. | FR17 |
+| `test_find_cached_ignores_case_and_spaces` | A saved list is found again when typed with different case and spacing, with the same score and lists. | FR14, FR17 |
+| `test_find_cached_reads_rows_in_old_format` | A record written by versions before 1.3.0 (Python text instead of JSON) is still read. | FR17 |
+| `test_parse_list_reads_json_and_old_format` | Both storage formats of the ingredient lists are read. | FR14 |
+
+**Result:** 5 of 5 tests pass. Coverage of `database.py`: 89% (it was 74% before these tests were added).
+
+**What is not covered.** No automated test runs the API layer and the real database *together*: `test_app.py` replaces the database, and `test_database.py` does not go through the API. The connection between the two was checked in the manual tests (scenarios 8 to 10).
 
 ### System testing
 
@@ -92,15 +108,15 @@ The system as a whole is verified by the manual acceptance tests below.
 
 | Measure | Value |
 |---------|-------|
-| Tests passed | 24 of 24 |
-| Total coverage | 95% |
-| Coverage by module | `beauty_api.py` 100%, `analyzer.py` 96%, `app.py` 90%, `database.py` 74% |
+| Tests passed | 33 of 33 |
+| Total coverage | 97% |
+| Coverage by module | `beauty_api.py` 100%, `analyzer.py` 96%, `app.py` 93%, `database.py` 89% |
 | Required minimum (NFR8) | 70% |
 | Other checks (ruff, mypy, format check) | pass |
 
 ## Acceptance tests (manual)
 
-The manual tests run the whole system for real: real server, real Open Beauty Facts, real AI models. They were repeated before the final release (1.2.1). To repeat them, start the application as described in the [User guide](../09-user-guide/) with a valid key in `.env`, and open `http://127.0.0.1:5000`.
+The manual tests run the whole system for real: real server, real Open Beauty Facts, real AI models. They were repeated before the final release (1.3.1). To repeat them, start the application as described in the [User guide](../09-userguide/) with a valid key in `.env`, and open `http://127.0.0.1:5000`.
 
 | # | Scenario | Steps | Expected result | Requirement | Result |
 |---|----------|-------|-----------------|-------------|--------|
@@ -110,8 +126,11 @@ The manual tests run the whole system for real: real server, real Open Beauty Fa
 | 4 | Label photo | Upload a clear photo of an ingredient label (JPEG). | The list is read from the photo, then a score appears; the product name is "Photo Entry". | FR5 | Passed |
 | 5 | Waiting feedback | Start any analysis and watch the page. | A progress bar and the elapsed seconds are shown until the result arrives. | NFR2 | Passed |
 | 6 | Score colours | Obtain a low score (a list with many irritants), a medium one and a high one. | Below 40 the score is red, 40 to 69 orange, 70 or more green. | FR11 | Passed |
-| 7 | History | Open `http://127.0.0.1:5000/api/v1/history` after several analyses. | The analyses are listed, newest first, with name, brand, score and summary. | FR14 | Passed |
+| 7 | History through the API | Open `http://127.0.0.1:5000/api/v1/history` after several analyses. | The analyses are listed, newest first, with name, brand, score, summary and input method. | FR14 | Passed |
+| 8 | Saved result | Analyse a typed list, then analyse the same list again. | The second answer arrives almost at once, with the same score and a grey note saying that it is a saved result. | FR17 | Passed |
+| 9 | History on the page | After several analyses (barcode, typed and photo), look at "Recent Analyses" and click two different rows. | Each product appears once, as a row with score, name and input method; a click opens a short summary, and opening another row closes the first. | FR14, FR16 | Passed |
+| 10 | Details from the history | Open a row and press "Show details". | The page scrolls up and the full result is shown, with a note that it comes from the history. | FR16 | Passed |
 
-**Success rate:** 7 of 7 scenarios passed in the final run.
+**Success rate:** 10 of 10 scenarios passed in the final run.
 
-Because the score and the lists come from an AI model, the exact numbers differ between runs and between models. The manual tests therefore judge whether the result is *present and sensible* (a score between 0 and 100, flagged ingredients that really appear on the list), not whether it equals a fixed value. Occasionally, when all free models are busy, a scenario fails with the "temporarily unavailable" message; repeating it a minute later normally works. This is a limitation of free AI services, not of the application logic (see [Self-evaluation](../11-selfevaluation/)).
+Because the score and the lists come from an AI model, the exact numbers differ between runs and between models. The local database of the developer gave a clear example: before saved results were reused, the same toothpaste ingredient list had been analysed twice and received 73 and 10, and the same barcode received 10 and 7. Since version 1.3.0 a list that was already analysed always gets its saved result back, so the user sees a stable score; the disagreement between models remains a limit of the analysis itself (see [Self-evaluation](../11-selfevaluation/)). The manual tests therefore judge whether the result is *present and sensible* (a score between 0 and 100, flagged ingredients that really appear on the list), not whether it equals a fixed value. Occasionally, when all free models are busy, a scenario fails with the "temporarily unavailable" message; repeating it a minute later normally works. This is a limitation of free AI services, not of the application logic (see [Self-evaluation](../11-selfevaluation/)).

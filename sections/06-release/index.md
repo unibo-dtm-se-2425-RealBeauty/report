@@ -81,3 +81,5 @@ No release branch is needed, because only one version is maintained: the latest 
 | 1.1.0 | The HTTP API versioned under `/api/v1`; logging of AI failures; longer timeout for AI requests. |
 | 1.2.0 | Score shown out of 100; retries when the AI provider is overloaded; ingredients read from language-specific fields. |
 | 1.2.1 | Fallback to alternative free models; detection of the real image type of uploaded photos. |
+| 1.3.0 | Reuse of saved results for an ingredient list already analysed; the ingredient lists stored as real JSON; history shown on the page. |
+| 1.3.1 | History shown as compact rows, one open at a time, with each product only once. |

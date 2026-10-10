@@ -89,7 +89,16 @@ After a successful analysis, the input fields are cleared and the result stays o
 
 ## Previous analyses
 
-Every completed analysis is saved on the computer where the application runs. The list is not shown on the page. It can be viewed by opening <http://127.0.0.1:5000/api/v1/history> in the browser, which shows the saved analyses, newest first, with product name, brand, score and summary, in a technical text format (JSON).
+Every completed analysis is saved on the computer where the application runs, and the list **Recent Analyses** at the bottom of the page shows the last ten products, newest first. Each product appears once, as a row with its score, its name and the way it was entered (barcode, manual entry or photo). For products without a name, the beginning of the ingredient list is shown instead.
+
+- **Click a row** to see a short summary: the summary text, how many ingredients were flagged at each severity, the high-risk ingredients, and the beneficial ones. Only one row is open at a time; clicking another row closes the first, and clicking the same row again closes it.
+- **Press "Show details"** in an open row to see the full result. The page moves up to the result area and shows it exactly as after a new analysis, with a grey note saying that it comes from the history.
+
+![Recent Analyses with one row open](../../pictures/userguide-history.png)
+
+**Analysing a product again.** When an ingredient list was already analysed (also with different upper and lower case or spacing), the result appears almost at once, with a grey note saying that it is a saved result and that no new AI analysis was needed. The score is therefore always the same for the same list. For label photos this happens less often, because the text read from a new photo can differ by a letter.
+
+The same list is also available to programs at <http://127.0.0.1:5000/api/v1/history>, in a technical text format (JSON).
 
 ## For programmers: using the API
 
@@ -101,4 +110,4 @@ curl -X POST http://127.0.0.1:5000/api/v1/analyze \
   -d '{"ingredients": "Aqua, Glycerin"}'
 ```
 
-The answer is a JSON object with `product_name`, `brand`, `score`, `summary`, `flagged` and `safe_highlights`. A description of the routes and error codes is in the [Design](../03-design/) section and in the README of the repository.
+The answer is a JSON object with `product_name`, `brand`, `score`, `summary`, `flagged`, `safe_highlights` and `cached` (true when a saved result was returned). A description of the routes and error codes is in the [Design](../03-design/) section and in the README of the repository.
