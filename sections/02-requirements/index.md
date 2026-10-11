@@ -6,13 +6,13 @@ nav_order: 3
 
 # Requirements
 
-This section states **what** RealBeauty must do, not how it does it. How the requirements are realised is described in the [Design](../03-design/) section, and how they are checked is described in the [Validation](../05-validation/) section.
+In this section I state **what** RealBeauty must do, not how it does it. How I realised the requirements is described in the [Design](../03-design/) section, and how I checked them in the [Validation](../05-validation/) section.
 
 ## Personas and user stories
 
-Three kinds of users are considered.
+I considered three kinds of users.
 
-- **Shopper**: a person standing in a shop (or at home) who holds a personal care product and wants a quick opinion before buying or using it. They use a phone or a laptop, and rarely read the small print on the label.
+- **Shopper**: a person standing in a shop (or at home) who holds a personal care product and wants a quick opinion before buying or using it. They use a laptop, and rarely read the small print on the label.
 - **Sensitive user**: a person with sensitive skin, allergies or specific concerns, who wants to know *which* ingredients may be a problem and *why*.
 - **Integrator**: a developer who wants to reuse the analysis from another program through a stable HTTP interface.
 
@@ -93,7 +93,7 @@ Three kinds of users are considered.
 
 ## Acceptance criteria
 
-Each criterion says how it is decided that the requirement is met. The last column says how it is checked: by an automated test (name of the test, see [Validation](../05-validation/)) or by a manual test.
+Each criterion says how I decide that the requirement is met. The last column says how it is checked: by an automated test (name of the test, see [Validation](../05-validation/)) or by a manual test.
 
 | Req. | Acceptance criterion | Checked by |
 |------|----------------------|------------|

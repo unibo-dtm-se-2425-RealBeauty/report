@@ -16,7 +16,7 @@ nav_order: 7
 | GitHub release | A tagged release with automatically generated release notes and the files of `dist/` attached. | GitHub, repository `artifact` |
 | `CHANGELOG.md` | The history of all releases, grouped into features, bug fixes and documentation. | In the repository |
 
-PyPI is the standard repository for Python packages and is free. GitHub is where the code already lives, so the release notes and the tags stay next to the source. No Docker image was produced (see [Deployment](../07-deployment/)).
+I chose PyPI because it is the standard repository for Python packages and is free, and GitHub because the code already lives there, so the release notes and the tags stay next to the source. I did not produce a Docker image (see [Deployment](../07-deployment/)).
 
 **How a release is made: automatically.** No release step is done by hand. The release is the last step of the CI/CD pipeline (see [CI/CD](../08-cicd/)) and works as follows:
 
@@ -28,7 +28,7 @@ PyPI is the standard repository for Python packages and is free. GitHub is where
 
 The behaviour is defined in `release.config.mjs` and `.github/workflows/deploy.yml`. On a branch other than `master` or `main`, the release runs in *dry-run* mode: it shows what would be released without publishing anything.
 
-**One-time configuration.** To make the pipeline work, two secrets were added to the repository settings (*Settings, Secrets and variables, Actions*):
+**One-time configuration.** To make the pipeline work, I added two secrets to the repository settings (*Settings, Secrets and variables, Actions*):
 
 | Secret | Content |
 |--------|---------|
@@ -41,7 +41,7 @@ The tokens are never stored in the code. No command has to be run to release: pu
 
 **License: Apache License 2.0**, for both the code and the published package. The `LICENSE` file is in the repository root and the package metadata (`pyproject.toml`) declares the same license.
 
-Reasons:
+I chose it for these reasons:
 
 - It is a *permissive* license: anyone may use, modify and redistribute the code, also in other projects, as long as the license text and the notices are kept.
 - It contains an explicit patent grant, which the shorter MIT license does not.
@@ -51,7 +51,7 @@ There is only one artefact, so the same license applies to everything that is pu
 
 ## Choice of the versioning schema
 
-**Schema: Semantic Versioning (SemVer), `MAJOR.MINOR.PATCH`.** It tells users at a glance what kind of change a new version contains:
+**Schema: Semantic Versioning (SemVer), `MAJOR.MINOR.PATCH`.** I chose it because it tells users at a glance what kind of change a new version contains:
 
 | Part | Increased when | Triggered by the commit type |
 |------|----------------|------------------------------|
@@ -59,7 +59,7 @@ There is only one artefact, so the same license applies to everything that is pu
 | MINOR (`1.3.0`) | A new feature is added, compatibly. | `feat:` |
 | PATCH (`1.2.2`) | A bug is fixed, compatibly. | `fix:` |
 
-Commits of type `docs`, `test`, `refactor`, `build`, `ci` and `chore` do not create a release. Date-based versioning was not chosen because the version should describe the *kind* of change, not only when it happened.
+Commits of type `docs`, `test`, `refactor`, `build`, `ci` and `chore` do not create a release. I did not choose date-based versioning because the version should describe the *kind* of change, not only when it happened.
 
 **Number of artefacts.** All artefacts (package, tag, GitHub release) come from the same release step and carry the same number, so there is nothing to align.
 

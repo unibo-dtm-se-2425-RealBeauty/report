@@ -10,14 +10,14 @@ This guide is for a person who wants to continue the development of RealBeauty o
 
 ## Organisation
 
-The project was developed by a single person, who is also the contact for questions: Serra Özkasap, <serra.ozkasap@studio.unibo.it>. Both repositories are in the GitHub organization `unibo-dtm-se-2425-RealBeauty`:
+I developed the project alone, and I am also the contact for questions: Serra Özkasap, <serra.ozkasap@studio.unibo.it>. Both repositories are in the GitHub organization `unibo-dtm-se-2425-RealBeauty`:
 
 | Repository | Content | Main branch |
 |------------|---------|-------------|
 | `artifact` | The application, its tests and the CI/CD pipeline. | `master` |
 | `report` | This report (a Jekyll website published with GitHub Pages). | `main` |
 
-Issues have not been used so far in the project. A problem found by a future contributor can be reported as an issue of the `artifact` repository (tab *Issues*), giving the steps to reproduce it, what was expected and what happened. Known limitations are listed in [Self-evaluation](../11-selfevaluation/) and ideas for improvement in [Future works](../12-future/); they are a good starting point.
+I did not use issues for most of the project. A problem found by a future contributor can be reported as an issue of the `artifact` repository (tab *Issues*), giving the steps to reproduce it, what was expected and what happened. Known limitations are listed in [Self-evaluation](../11-selfevaluation/) and ideas for improvement in [Future works](../12-future/); they are a good starting point.
 
 ## Development environment
 
@@ -101,7 +101,7 @@ An incompatible change is marked with a line `BREAKING CHANGE: ...` in the body 
 
 ## Workflow
 
-The project itself was developed directly on `master`, as described in [Development](../04-development/). A new contributor is advised to use a short-lived branch and a pull request instead; the pipeline also runs on pull requests, so the checks are done before the code reaches `master`:
+I developed most of the project directly on `master`, as described in [Development](../04-development/). A new contributor is advised to use a short-lived branch and a pull request instead; the pipeline also runs on pull requests, so the checks are done before the code reaches `master`:
 
 1. Create a branch: `git checkout -b feat/short-name`.
 2. Make the change, with its tests, and run the three commands listed above.
@@ -116,4 +116,4 @@ Secrets (`PYPI_TOKEN`, `RELEASE_TOKEN`) are configured in the repository setting
 
 ## Tools
 
-The project was developed with Visual Studio Code and the macOS Terminal, but no specific editor is required. The editor should use the project's Poetry environment (in VS Code: *Python: Select Interpreter*, then the one inside `.venv`), so that `ruff` and `mypy` find the installed libraries. The test of a single file or function can be run with `poetry run pytest tests/test_app.py -k not_found`, and the application can be tried without the browser with `curl` (an example is in the README).
+I developed the project with Visual Studio Code and the macOS Terminal, but no specific editor is required. The editor should use the project's Poetry environment (in VS Code: *Python: Select Interpreter*, then the one inside `.venv`), so that `ruff` and `mypy` find the installed libraries. The test of a single file or function can be run with `poetry run pytest tests/test_app.py -k not_found`, and the application can be tried without the browser with `curl` (an example is in the README).

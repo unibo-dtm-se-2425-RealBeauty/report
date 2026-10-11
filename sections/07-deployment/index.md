@@ -6,7 +6,7 @@ nav_order: 8
 
 # Deployment
 
-RealBeauty is a web application meant to be run by the person who uses it, on their own computer. It is not hosted on a public server. A user therefore installs and starts it locally; the browser and the server run on the same machine.
+I designed RealBeauty to be run by the person who uses it, on their own computer, and I did not host it on a public server. A user therefore installs and starts it locally; the browser and the server run on the same machine.
 
 ## User installation
 
@@ -63,6 +63,6 @@ The database file (`realbeauty.db`) is created automatically in the project fold
 - there is **no message broker, cache or web server**, because the design does not use them;
 - the two external services (Open Beauty Facts and OpenRouter) are used over the Internet and need no installation, only an Internet connection.
 
-**Hosting on a public server.** This was not done, and the setup above is not suitable for it. The command used to start the application runs Flask's built-in development server, which is meant for a single user and is not hardened against public traffic. Moreover, the application has no user accounts (see [Development](../04-development/)), so everyone who reached the server could use the key of the owner and fill the history. Before a public deployment, a production web server (for example Gunicorn behind a reverse proxy with HTTPS), a container image, user authentication and a request limit would have to be added. These steps are listed in [Future works](../12-future/).
+**Hosting on a public server.** I did not do this, and the setup above is not suitable for it. The command used to start the application runs Flask's built-in development server, which is meant for a single user and is not hardened against public traffic. Moreover, the application has no user accounts (see [Development](../04-development/)), so everyone who reached the server could use the key of the owner and fill the history. Before a public deployment, a production web server (for example Gunicorn behind a reverse proxy with HTTPS), a container image, user authentication and a request limit would have to be added. These steps are listed in [Future works](../12-future/).
 
 **The report website.** Separately from the software, this report is published as a website by GitHub Pages, which builds the Markdown files of the `report` repository automatically at every push to `main`. No installation is needed to read it.

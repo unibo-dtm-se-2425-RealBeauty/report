@@ -8,7 +8,7 @@ nav_order: 9
 
 ## Conceptual description
 
-Everything that can be checked or published by a program is automated with **GitHub Actions**. The goal is that the quality of the code does not depend on the developer remembering to run something: every push is verified in the same way, on clean machines, and a release happens only if the verification succeeds.
+I automated with **GitHub Actions** everything that a program can check or publish. My goal was that the quality of the code does not depend on me remembering to run something: every push is verified in the same way, on clean machines, and a release happens only if the verification succeeds.
 
 The pipeline is defined in two files of the `artifact` repository, `.github/workflows/check.yml` (named *CI/CD*) and `.github/workflows/deploy.yml`, and has three stages that run one after the other. A stage starts only if the previous one succeeded.
 
@@ -33,7 +33,7 @@ If a stage fails, the next one does not start, and nothing is published.
 | Format | `poe format-check` | The code is formatted as `ruff format` would do. |
 | Tests with coverage | `poe coverage`, `poe coverage-report`, `poe coverage-html` | Runs the tests while measuring which lines run, and prints the report. |
 
-The HTML coverage report is saved as a downloadable *artifact* of the run (`coverage-report-<commit>`). The same `poe` tasks are used on the developer's machine, so a check that passes locally behaves the same in the pipeline.
+The HTML coverage report is saved as a downloadable *artifact* of the run (`coverage-report-<commit>`). I use the same `poe` tasks on my own computer, so a check that passes locally behaves the same in the pipeline.
 
 **Stage 2: test matrix.** The test suite is run on Ubuntu, Windows and macOS, each with Python 3.10, 3.11, 3.12 and 3.13, i.e. 12 combinations. `fail-fast` is disabled, so a failure in one combination does not hide the result of the others, and every job has a 45-minute time limit. The tests need no network and no API key, because the outside services are replaced by test doubles (see [Validation](../05-validation/)).
 

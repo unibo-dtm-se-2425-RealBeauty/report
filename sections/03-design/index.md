@@ -8,7 +8,7 @@ nav_order: 4
 
 ## Architecture
 
-**Architectural style: layered (3 layers), in a client-server setting.**
+**Architectural style: layered (3 layers), in a client-server setting.** I chose this style for the reasons below.
 
 RealBeauty is a web application. The browser is the client, a single Flask server is the server, and the server code is split into three layers. Each layer only talks to the layer right below it.
 
@@ -20,15 +20,15 @@ RealBeauty is a web application. The browser is the client, a single Flask serve
 | 2. Application logic | Receives requests, checks the input, decides the order of the steps (including whether a saved result can be reused), returns clear errors (400, 404, 422, 503). | `app.py` |
 | 3. Data and integration | Talks to everything outside: Open Beauty Facts (`beauty_api.py`), the AI models (`analyzer.py`) and the database (`database.py`). | three modules |
 
-**Why a layered style?**
+**Why did I choose a layered style?**
 
 - The system is a simple chain: the user sends a request, the server does a few steps one after the other (find the product, judge the ingredients, save the result) and sends one answer back. A layered structure matches this directly.
 - Each outside service sits in its own module in layer 3. If the AI model or the product database is changed, only that module changes.
 - In the tests, layer 3 is replaced by fakes, so the tests need no network and no API key (see [Validation](../05-validation/)).
 
-**Why not the other styles?**
+**Why did I not choose the other styles?**
 
-| Style | Why it was not used |
+| Style | Why I did not use it |
 |-------|-----------------------|
 | Object-based | The domain is tiny (one stored entity). Splitting it into many collaborating objects would add code without benefit. |
 | Event-based / message queues | Nothing has to happen "later" or in the background. The user waits for the result, so a broker and workers would only add cost and failure points. |
@@ -44,15 +44,15 @@ The system runs as **one server process**.
 
 | Component | How many | Notes |
 |-----------|----------|-------|
-| Browser (client) | any | On the user's phone or computer. |
+| Browser (client) | 1 | On the same computer as the server. |
 | Flask server | 1 | Serves the page and the API. |
 | SQLite database | 1 | A file next to the server, no database server. |
 | Open Beauty Facts | 1, external | Public service, not controlled by the project. |
 | OpenRouter (and the AI providers behind it) | 1, external | Free models. |
 
-Load balancers, separate cache servers (such as Redis), message queues and workers were deliberately left out. The expected load is a few requests per user per day, so they would add complexity and solve nothing. Saved results are reused directly from the SQLite database that already stores the history (see [Data-related aspects](#data-related-aspects)), so no extra component was needed for that.
+I deliberately left out load balancers, separate cache servers (such as Redis), message queues and workers. The expected load is a few requests per user per day, so they would add complexity and solve nothing. Saved results are reused directly from the SQLite database that already stores the history (see [Data-related aspects](#data-related-aspects)), so no extra component was needed for that.
 
-The server and the database file are on the same machine. The browser reaches the server over HTTP (by default `http://127.0.0.1:5000`). The server reaches the two external services over HTTPS; their addresses are fixed in the code. The OpenRouter key is read from a `.env` file on the server and is never published.
+The browser, the server and the database file are on the same computer. The browser reaches the server over HTTP (by default `http://127.0.0.1:5000`). The server reaches the two external services over HTTPS; their addresses are fixed in the code. The OpenRouter key is read from a `.env` file on the server and is never published.
 
 ![Deployment of RealBeauty](../../pictures/design-deployment.png)
 
@@ -60,7 +60,7 @@ The server and the database file are on the same machine. The browser reaches th
 
 ### Domain driven design (DDD) modelling
 
-The domain is small, so the modelling was kept light. Three **bounded contexts** were identified:
+The domain is small, so I kept the modelling light. I identified three **bounded contexts**:
 
 | Context | About | Main concepts |
 |---------|-------|---------------|

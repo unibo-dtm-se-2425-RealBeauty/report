@@ -8,9 +8,9 @@ nav_order: 6
 
 ## Testing approach
 
-The software was tested with automated tests written in **pytest**, plus manual acceptance tests of the web page. pytest was chosen because it was already set up in the project template, tests are plain functions with ordinary `assert` statements, and it works with `unittest.mock` for replacing outside services.
+I tested the software with automated tests written in **pytest**, plus manual acceptance tests of the web page. I chose pytest because it was already set up in the project template, tests are plain functions with ordinary `assert` statements, and it works with `unittest.mock` for replacing outside services.
 
-Test-driven development was **not** followed. The code of each feature was written first and the tests came afterwards (the commit `test: replace template test with app route tests` is an example). The one exception is the retry and fallback logic for the AI service: each failure found in real use (overloaded provider, empty answer) was fixed together with a test that reproduces it.
+I did **not** follow test-driven development. I wrote the code of each feature first and the tests afterwards (the commit `test: replace template test with app route tests` is an example). The one exception is the retry and fallback logic for the AI service: I fixed each failure I found in real use (overloaded provider, empty answer) together with a test that reproduces it.
 
 Because the application depends on two outside services (Open Beauty Facts and an AI service reached through OpenRouter), **no automated test calls the real services**. They are slow, need an API key, can fail for reasons unrelated to the code, and the free AI models give different answers at each call. All outside calls are replaced by test doubles; the real services are exercised only in the manual tests.
 
@@ -94,13 +94,13 @@ All routes are called under `/api/v1`, so the tests also confirm the versioned a
 | `test_find_cached_reads_rows_in_old_format` | A record written by versions before 1.3.0 (Python text instead of JSON) is still read. | FR17 |
 | `test_parse_list_reads_json_and_old_format` | Both storage formats of the ingredient lists are read. | FR14 |
 
-**Result:** 5 of 5 tests pass. Coverage of `database.py`: 89% (it was 74% before these tests were added).
+**Result:** 5 of 5 tests pass. Coverage of `database.py`: 89% (it was 74% before I added these tests).
 
-**What is not covered.** No automated test runs the API layer and the real database *together*: `test_app.py` replaces the database, and `test_database.py` does not go through the API. The connection between the two was checked in the manual tests (scenarios 8 to 10).
+**What is not covered.** No automated test runs the API layer and the real database *together*: `test_app.py` replaces the database, and `test_database.py` does not go through the API. I checked the connection between the two in the manual tests (scenarios 8 to 10).
 
 ### System testing
 
-There are **no automated system tests**: nothing starts the real server and calls the real Open Beauty Facts and AI services. The reasons are given above (key needed, unreliable free models, different answers at each run). Containers were not used for testing either; the clean environment is provided by the CI machines, which start from an empty virtual machine at every run.
+There are **no automated system tests**: nothing starts the real server and calls the real Open Beauty Facts and AI services. The reasons are given above (key needed, unreliable free models, different answers at each run). I did not use containers for testing either; the clean environment is provided by the CI machines, which start from an empty virtual machine at every run.
 
 The system as a whole is verified by the manual acceptance tests below.
 
@@ -116,7 +116,7 @@ The system as a whole is verified by the manual acceptance tests below.
 
 ## Acceptance tests (manual)
 
-The manual tests run the whole system for real: real server, real Open Beauty Facts, real AI models. They were repeated before the final release (1.3.1). To repeat them, start the application as described in the [User guide](../09-userguide/) with a valid key in `.env`, and open `http://127.0.0.1:5000`.
+The manual tests run the whole system for real: real server, real Open Beauty Facts, real AI models. I repeated them before the final release (1.3.1). To repeat them, start the application as described in the [User guide](../09-userguide/) with a valid key in `.env`, and open `http://127.0.0.1:5000`.
 
 | # | Scenario | Steps | Expected result | Requirement | Result |
 |---|----------|-------|-----------------|-------------|--------|
@@ -133,4 +133,4 @@ The manual tests run the whole system for real: real server, real Open Beauty Fa
 
 **Success rate:** 10 of 10 scenarios passed in the final run.
 
-Because the score and the lists come from an AI model, the exact numbers differ between runs and between models. The local database of the developer gave a clear example: before saved results were reused, the same toothpaste ingredient list had been analysed twice and received 73 and 10, and the same barcode received 10 and 7. Since version 1.3.0 a list that was already analysed always gets its saved result back, so the user sees a stable score; the disagreement between models remains a limit of the analysis itself (see [Self-evaluation](../11-selfevaluation/)). The manual tests therefore judge whether the result is *present and sensible* (a score between 0 and 100, flagged ingredients that really appear on the list), not whether it equals a fixed value. Occasionally, when all free models are busy, a scenario fails with the "temporarily unavailable" message; repeating it a minute later normally works. This is a limitation of free AI services, not of the application logic (see [Self-evaluation](../11-selfevaluation/)).
+Because the score and the lists come from an AI model, the exact numbers differ between runs and between models. My own local database gave a clear example: before saved results were reused, the same toothpaste ingredient list had been analysed twice and received 73 and 10, and the same barcode received 10 and 7. Since version 1.3.0 a list that was already analysed always gets its saved result back, so the user sees a stable score; the disagreement between models remains a limit of the analysis itself (see [Self-evaluation](../11-selfevaluation/)). The manual tests therefore judge whether the result is *present and sensible* (a score between 0 and 100, flagged ingredients that really appear on the list), not whether it equals a fixed value. Occasionally, when all free models are busy, a scenario fails with the "temporarily unavailable" message; repeating it a minute later normally works. This is a limitation of free AI services, not of the application logic (see [Self-evaluation](../11-selfevaluation/)).
