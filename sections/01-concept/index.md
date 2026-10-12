@@ -41,5 +41,5 @@ Yes, a history of the analyses. For every analysis the system saves the barcode 
 - *Open Beauty Facts*: a free, community-maintained database, used to find the name, brand and ingredients of a product from its barcode. Many products are missing or have no ingredient list, which is why the manual and photo inputs exist.
 - *OpenRouter*: a gateway to AI models. I use only free models, so answers can be slow, and a model may be busy; the system therefore retries and falls back to other models.
 
-**What the product is not.**
+**What the product is not?**
 RealBeauty is an educational and based on my interest project. Its output comes from an AI model, may be wrong, and is not medical or dermatological advice. Since version 1.4.0, the page says this under every result. But again, we should be aware of this.
