@@ -22,9 +22,9 @@ If a stage fails, the next one does not start, and nothing is published.
 
 ## How it works
 
-**When the pipeline runs.** It starts on every push, except pushes to branches created by the dependency bots (`dependabot/**`, `renovate/**`) and pushes that change only files with no effect on the code (`README.md`, `CHANGELOG.md`, `LICENSE`, `.gitignore`, `renovate.json`, `.mergify.yml`). It also starts on pull requests and can be started manually from the Actions page (`workflow_dispatch`). The commit that the release tool creates at the end has `[skip ci]` in its message, so it does not start the pipeline again.
+**When the pipeline runs:** It starts on every push, except pushes to branches created by the dependency bots (`dependabot/**`, `renovate/**`) and pushes that change only files with no effect on the code (`README.md`, `CHANGELOG.md`, `LICENSE`, `.gitignore`, `renovate.json`, `.mergify.yml`). It also starts on pull requests and can be started manually from the Actions page (`workflow_dispatch`). The commit that the release tool creates at the end has `[skip ci]` in its message, so it does not start the pipeline again.
 
-**Stage 1: preliminary checks.** On a clean Ubuntu machine the job checks out the full history, installs Poetry and the project dependencies (`poetry install`), and then runs, in this order:
+**Stage 1: preliminary checks** On a clean Ubuntu machine the job checks out the full history, installs Poetry and the project dependencies (`poetry install`), and then runs, in this order:
 
 | Step | Command | Purpose |
 |------|---------|---------|
@@ -35,15 +35,15 @@ If a stage fails, the next one does not start, and nothing is published.
 
 The HTML coverage report is saved as a downloadable *artifact* of the run (`coverage-report-<commit>`). I use the same `poe` tasks on my own computer, so a check that passes locally behaves the same in the pipeline.
 
-**Stage 2: test matrix.** The test suite is run on Ubuntu, Windows and macOS, each with Python 3.10, 3.11, 3.12 and 3.13, i.e. 12 combinations. `fail-fast` is disabled, so a failure in one combination does not hide the result of the others, and every job has a 45-minute time limit. The tests need no network and no API key, because the outside services are replaced by test doubles (see [Validation](../05-validation/)).
+**Stage 2: test matrix** The test suite is run on Ubuntu, Windows and macOS, each with Python 3.10, 3.11, 3.12 and 3.13, i.e. 12 combinations. `fail-fast` is disabled, so a failure in one combination does not hide the result of the others, and every job has a 45-minute time limit. The tests need no network and no API key, because the outside services are replaced by test doubles (see [Validation](../05-validation/)).
 
-**Stage 3: release.** The `deploy` job is defined as a reusable workflow in `deploy.yml` and is called by the main workflow after all test jobs have passed. It installs Node.js (the version is read from `package.json`) and runs `npx semantic-release`, which decides the new version from the commit messages and publishes it, as described in [Release](../06-release/). Details:
+**Stage 3: release** The `deploy` job is defined as a reusable workflow in `deploy.yml` and is called by the main workflow after all test jobs have passed. It installs Node.js (the version is read from `package.json`) and runs `npx semantic-release`, which decides the new version from the commit messages and publishes it, as described in [Release](../06-release/). Details:
 
 - A `concurrency` group allows only one release job at a time, so two quick pushes cannot publish at the same moment.
 - The release is a **dry run** (nothing is published) when the branch is not `master` or `main`, and for the very first commit of a repository.
 - The upload to PyPI is done with `poetry publish --build`.
 
-**Secrets and variables.** Secrets are stored in the repository settings and are passed to the release step as environment variables; they never appear in the code or in the logs.
+**Secrets and variables:** Secrets are stored in the repository settings and are passed to the release step as environment variables; they never appear in the code or in the logs.
 
 | Name | Where it is used | Purpose |
 |------|------------------|---------|
@@ -53,6 +53,6 @@ The HTML coverage report is saved as a downloadable *artifact* of the run (`cove
 
 The application's own key for the AI service is **not** a secret of the pipeline: the tests do not call the service, so the pipeline does not need it.
 
-**Other automation.** The file `renovate.json` configures a bot that proposes updates of the dependencies. GitHub's dependency alerts are also active (see the open points in [Self-evaluation](../11-selfevaluation/)). The report repository has no pipeline of its own: GitHub Pages builds the website from the Markdown files at every push to `main`.
+**Other automation:** The file `renovate.json` configures a bot that proposes updates of the dependencies. GitHub's dependency alerts are also active (see the open points in [Self-evaluation](../11-selfevaluation/)). The report repository has no pipeline of its own: GitHub Pages builds the website from the Markdown files at every push to `main`.
 
-**Status.** A badge in the README shows whether the last run of the pipeline succeeded. At the time of writing, all stages are green and six releases (1.0.0 to 1.3.1) were produced by it.
+**Status:** A badge in the README shows whether the last run of the pipeline succeeded. At the time of writing, all stages are green and seven releases (1.0.0 to 1.4.0) were produced by it. It also ran on the pull requests of the last changes, before they were merged.

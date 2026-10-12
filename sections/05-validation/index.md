@@ -10,7 +10,7 @@ nav_order: 6
 
 I tested the software with automated tests written in **pytest**, plus manual acceptance tests of the web page. I chose pytest because it was already set up in the project template, tests are plain functions with ordinary `assert` statements, and it works with `unittest.mock` for replacing outside services.
 
-I did **not** follow test-driven development. I wrote the code of each feature first and the tests afterwards (the commit `test: replace template test with app route tests` is an example). The one exception is the retry and fallback logic for the AI service: I fixed each failure I found in real use (overloaded provider, empty answer) together with a test that reproduces it.
+I did **not** follow test-driven development. I wrote the code of each feature first and the tests afterwards (the commit `test: replace template test with app route tests` is an example). The one exception is the retry and fallback logic for the AI service: I fixed each failure I found in real use (overloaded provider, empty answer) together with a test that reproduces it. The last three tests (issues #3 and #4) close gaps I noticed when re-reading the requirements, in particular what happens when a user gives both a barcode and an ingredient list.
 
 Because the application depends on two outside services (Open Beauty Facts and an AI service reached through OpenRouter), **no automated test calls the real services**. They are slow, need an API key, can fail for reasons unrelated to the code, and the free AI models give different answers at each call. All outside calls are replaced by test doubles; the real services are exercised only in the manual tests.
 
@@ -18,9 +18,9 @@ The tests run automatically on every push (see [CI/CD](../08-cicd/)): first on U
 
 ## Testing (automated)
 
-The suite has **33 tests, and all of them pass**. The tests are in the `tests` folder, one file per module of the application. The requirement each test checks is given in the tables below and, from the requirement side, in the acceptance-criteria table of [Requirements](../02-requirements/).
+The suite has **36 tests, and all of them pass**. The tests are in the `tests` folder, one file per module of the application. The requirement each test checks is given in the tables below and, from the requirement side, in the acceptance-criteria table of [Requirements](../02-requirements/).
 
-**Test doubles.** `unittest.mock.patch` replaces functions of the application and of the `requests` library for the time of one test.
+**Test doubles:** `unittest.mock.patch` replaces functions of the application and of the `requests` library for the time of one test.
 
 - *Stubs:* a replaced function that only returns a prepared value, for example the product catalogue returning a fixed product, or the AI analysis returning a fixed score of 80.
 - *Fakes of failure:* a replaced function that raises an error (`side_effect`), for example a network error or an AI model that keeps failing.
@@ -61,15 +61,18 @@ The unit tests check each client module alone. The outside world is replaced, so
 
 ### Integration testing
 
-**`tests/test_app.py` (14 tests): the API layer with the web framework.** These tests send requests to the application through Flask's test client, so routing, input checking, JSON answers and status codes run for real. The three modules of the lowest layer (`get_product_by_barcode`, `analyze_ingredients`, `extract_ingredients_from_image`) and the database functions (`save_analysis`, `get_history`, `find_cached_analysis`) are replaced by stubs or mocks. By default the lookup of saved results returns nothing, so every test starts as if the product were new. What is tested is therefore the coordination done by the API layer: which step comes next, what is returned, and which error is reported.
+**`tests/test_app.py` (17 tests): the API layer with the web framework.** These tests send requests to the application through Flask's test client, so routing, input checking, JSON answers and status codes run for real. The three modules of the lowest layer (`get_product_by_barcode`, `analyze_ingredients`, `extract_ingredients_from_image`) and the database functions (`save_analysis`, `get_history`, `find_cached_analysis`) are replaced by stubs or mocks. By default the lookup of saved results returns nothing, so every test starts as if the product were new. What is tested is therefore the coordination done by the API layer: which step comes next, what is returned, and which error is reported.
 
 | Test | What it checks | Requirement |
 |------|----------------|-------------|
 | `test_index_returns_page` | The home address returns the web page. | FR16 |
+| `test_index_shows_ai_disclaimer` | The page contains the message that the result is AI-generated and not medical advice. | NFR6 |
 | `test_analyze_without_input_returns_400` | A request with no barcode and no ingredients is refused. | FR12 |
 | `test_analyze_manual_ingredients` | Typed ingredients give a score, product name "Manual Entry", and the analysis is saved once (mock). | FR4, FR7-FR10, FR14 |
 | `test_analyze_barcode_found` | A known barcode gives the product name, brand and a score. | FR1, FR2 |
 | `test_analyze_barcode_not_found_returns_404` | An unknown barcode gives `not_found`. | FR3 |
+| `test_barcode_found_wins_over_typed_ingredients` | With both a barcode and typed ingredients, a found product's list is analysed and the typed list is ignored (mock). | FR2, FR4 |
+| `test_typed_ingredients_used_when_barcode_not_found` | With both a barcode and typed ingredients, an unknown barcode leads to the typed list being analysed as "Manual Entry" (mock). | FR3, FR4 |
 | `test_analyze_ai_failure_returns_503` | A failing AI service gives `ai_failed`. | FR13 |
 | `test_analyze_photo_without_file_returns_400` | A photo request without a file is refused. | FR12 |
 | `test_analyze_photo_success` | A photo gives a score and product name "Photo Entry". | FR5 |
@@ -82,7 +85,7 @@ The unit tests check each client module alone. The outside world is replaced, so
 
 All routes are called under `/api/v1`, so the tests also confirm the versioned address (FR15).
 
-**Result:** 14 of 14 tests in this file pass. Coverage of `app.py`: 93%.
+**Result:** 17 of 17 tests in this file pass. Coverage of `app.py`: 93%.
 
 **`tests/test_database.py` (5 tests): the storage module with a real database.** These tests do not replace the database: each one runs against a new, empty SQLite database kept in memory, so the real SQL queries and the real conversion of the stored lists are executed, while the `realbeauty.db` file of the user is never touched.
 
@@ -96,7 +99,7 @@ All routes are called under `/api/v1`, so the tests also confirm the versioned a
 
 **Result:** 5 of 5 tests pass. Coverage of `database.py`: 89% (it was 74% before I added these tests).
 
-**What is not covered.** No automated test runs the API layer and the real database *together*: `test_app.py` replaces the database, and `test_database.py` does not go through the API. I checked the connection between the two in the manual tests (scenarios 8 to 10).
+**What is not covered?** No automated test runs the API layer and the real database *together*: `test_app.py` replaces the database, and `test_database.py` does not go through the API. I checked the connection between the two in the manual tests (scenarios 8 to 10).
 
 ### System testing
 
@@ -108,7 +111,7 @@ The system as a whole is verified by the manual acceptance tests below.
 
 | Measure | Value |
 |---------|-------|
-| Tests passed | 33 of 33 |
+| Tests passed | 36 of 36 |
 | Total coverage | 97% |
 | Coverage by module | `beauty_api.py` 100%, `analyzer.py` 96%, `app.py` 93%, `database.py` 89% |
 | Required minimum (NFR8) | 70% |
@@ -116,7 +119,7 @@ The system as a whole is verified by the manual acceptance tests below.
 
 ## Acceptance tests (manual)
 
-The manual tests run the whole system for real: real server, real Open Beauty Facts, real AI models. I repeated them before the final release (1.3.1). To repeat them, start the application as described in the [User guide](../09-userguide/) with a valid key in `.env`, and open `http://127.0.0.1:5000`.
+The manual tests run the whole system for real: real server, real Open Beauty Facts, real AI models. I ran them before release 1.3.1, and for release 1.4.0 I added and ran scenario 11. To repeat them, start the application as described in the [User guide](../09-userguide/) with a valid key in `.env`, and open `http://127.0.0.1:5000`.
 
 | # | Scenario | Steps | Expected result | Requirement | Result |
 |---|----------|-------|-----------------|-------------|--------|

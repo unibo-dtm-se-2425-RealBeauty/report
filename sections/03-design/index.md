@@ -16,7 +16,7 @@ RealBeauty is a web application. The browser is the client, a single Flask serve
 
 | Layer | What it does | Code |
 |-------|--------------|------|
-| 1. Presentation | Shows the input form, the result (score, summary, ingredient lists) and the list of past analyses. | `templates/index.html` |
+| 1. Presentation | Shows the input form, the result (score, summary, ingredient lists) with a note that it is AI-generated and not medical advice and the list of past analyses. | `templates/index.html` |
 | 2. Application logic | Receives requests, checks the input, decides the order of the steps (including whether a saved result can be reused), returns clear errors (400, 404, 422, 503). | `app.py` |
 | 3. Data and integration | Talks to everything outside: Open Beauty Facts (`beauty_api.py`), the AI models (`analyzer.py`) and the database (`database.py`). | three modules |
 
@@ -36,7 +36,7 @@ RealBeauty is a web application. The browser is the client, a single Flask serve
 | Service-oriented / microservices | There is one small application and one developer. Splitting it into services would add networking and deployment work and solve no real problem. |
 | Hexagonal (ports and adapters) | Very close to the chosen structure, but there are no explicit "port" interfaces. There is only one implementation of each adapter, so a plain layered structure is simpler. |
 
-**Versioning.** All analysis routes live under `/api/v1`. A future incompatible change can be published as `/api/v2` while `/api/v1` keeps working (FR15).
+**Versioning** All analysis routes live under `/api/v1`. A future incompatible change can be published as `/api/v2` while `/api/v1` keeps working (FR15).
 
 ## Infrastructure
 
@@ -105,7 +105,7 @@ All communication is **synchronous request-reply** over HTTP. The browser sends 
 
 ![Sequence diagram: analysis from a barcode](../../pictures/design-sequence.png)
 
-- **Manual ingredients:** the barcode lookup is skipped.
+- **Manual ingredients:** if only ingredients are typed, the barcode lookup is skipped. If both a barcode and ingredients are given, the barcode is looked up first and the typed list is used only when the product is not found or has no ingredient list.
 - **Photo:** the server first asks an image-capable model to read the ingredient list, then analyses the text as above.
 - **Saved result:** if the same ingredient list was analysed before, the answer comes from the database at once, with `cached` set to true, and nothing new is saved. With a barcode, Open Beauty Facts is still asked first, because the saved result is found by its ingredient list, not by the barcode.
 - **History:** `GET /api/v1/history` returns the saved analyses, newest first, with each ingredient list only once. The web page calls it when it opens and after each analysis.
@@ -132,12 +132,12 @@ The web page is always in one of four situations: waiting for input; waiting for
 
 ## Data-related aspects
 
-**What is stored.** One record per completed analysis, in a SQLite file: barcode (if any), product name, brand, the analysed ingredients, score, summary, flagged and beneficial ingredients, and creation time (UTC). The purposes are to let users review past analyses (US9) and to return the same result again for the same product (US11). Photos are not stored.
+**What is stored?** One record per completed analysis, in a SQLite file: barcode (if any), product name, brand, the analysed ingredients, score, summary, flagged and beneficial ingredients, and creation time (UTC). The purposes are to let users review past analyses (US9) and to return the same result again for the same product (US11). Photos are not stored.
 
-**Why SQLite.** The data are flat records that are added, listed and looked up by one field. SQLite needs no server and no configuration, which suits one machine and one user. The flagged and beneficial ingredient lists are kept as JSON text inside the record because they are only displayed, never queried. Records saved by versions before 1.3.0 used the text form of a Python list instead of JSON; these are still read correctly (see [Development](../04-development/)).
+**Why SQLite?** The data are flat records that are added, listed and looked up by one field. SQLite needs no server and no configuration, which suits one machine and one user. The flagged and beneficial ingredient lists are kept as JSON text inside the record because they are only displayed, never queried. Records saved by versions before 1.3.0 used the text form of a Python list instead of JSON; these are still read correctly (see [Development](../04-development/)).
 
-**Saved results (cache).** The key of a saved result is the analysed ingredient list. Extra spaces and line breaks are removed before saving, and the lookup ignores upper and lower case, so the same list typed slightly differently is still recognised. The newest record for a list is the one reused, and the history shows only that one, so the user always sees the same score for the same list. The barcode is not used as the key, because the same ingredient list can come from a barcode, from typing or from a photo. A label photo is read again by the AI at each upload, and small differences in the text read (one letter can change) mean that saved results are found less often for photos than for barcodes and typed lists.
+**Saved results (cache):** The key of a saved result is the analysed ingredient list. Extra spaces and line breaks are removed before saving, and the lookup ignores upper and lower case, so the same list typed slightly differently is still recognised. The newest record for a list is the one reused, and the history shows only that one, so the user always sees the same score for the same list. The barcode is not used as the key, because the same ingredient list can come from a barcode, from typing or from a photo. A label photo is read again by the AI at each upload, and small differences in the text read (one letter can change) mean that saved results are found less often for photos than for barcodes and typed lists.
 
-**Operations.** One lookup by ingredient list before each analysis, one insert after each new successful analysis, and one read of the whole history, newest first (no paging, since the data are small). Each operation opens and closes its own database session. SQLite serialises writers, which is enough for a few users.
+**Operations:** One lookup by ingredient list before each analysis, one insert after each new successful analysis, and one read of the whole history, newest first (no paging, since the data are small). Each operation opens and closes its own database session. SQLite serialises writers, which is enough for a few users.
 
 No data are shared between components at run time: the analysis passes along as an in-memory value during a request and is stored once at the end.

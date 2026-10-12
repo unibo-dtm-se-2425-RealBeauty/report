@@ -10,9 +10,9 @@ nav_order: 5
 
 I developed the project alone, using Git, in the repository `artifact` of the GitHub organization. The report has its own repository, `report`.
 
-**Branches.** I did all the work on a single branch (`master` in `artifact`, `main` in `report`) and created no feature branches. With one developer and a CI pipeline that runs on every push, extra branches would only have added merge work.
+**Branches** For most of the project I worked on a single branch (`master` in `artifact`, `main` in `report`). With one developer and a CI pipeline that runs on every push, extra branches seemed to add only merge work. For the last changes I switched to short-lived branches, one per issue: `feat/ai-disclaimer` for the disclaimer on the page and `test/disclaimer-and-barcode-fallback` for the tests that followed it. Each branch was merged into `master` through a pull request.
 
-**Commit messages.** All commits follow the [Conventional Commits](https://www.conventionalcommits.org/) format: `type: short description`. The types used are:
+**Commit messages** All commits follow the [Conventional Commits](https://www.conventionalcommits.org/) format: `type: short description`. The types used are:
 
 | Type | Used for | Effect on the version |
 |------|----------|-----------------------|
@@ -20,33 +20,43 @@ I developed the project alone, using Git, in the repository `artifact` of the Gi
 | `fix` | a bug fix (for example `fix: retry when the AI provider is overloaded`) | patch release |
 | `docs`, `test`, `refactor`, `build`, `ci`, `chore` | documentation, tests, code clean-up, build and pipeline changes | no release |
 
-The format is not only a habit: the release tool (semantic-release, see [Release](../06-release/)) reads the commit messages to decide the next version number, publishes the release and writes the `chore(release)` commits by itself. At the end of the project, the repository had 39 commits and six releases (1.0.0, 1.1.0, 1.2.0, 1.2.1, 1.3.0, 1.3.1).
+The format is not only a habit: the release tool (semantic-release, see [Release](../06-release/)) reads the commit messages to decide the next version number, publishes the release and writes the `chore(release)` commits by itself. At the end of the project, the repository had 46 commits and seven releases (1.0.0, 1.1.0, 1.2.0, 1.2.1, 1.3.0, 1.3.1, 1.4.0). Commits of type `test` add no release, so the last tests did not change the version.
 
-**Working with the commits written by the pipeline.** Because semantic-release pushes its own `chore(release)` commit to `master` after each release, the local copy is one commit behind after every release. Once, my push was rejected for this reason ("the remote contains work that you do not have locally"). I solved it with `git pull --rebase`, which places the local commits on top of the release commit and keeps the history linear, without a merge commit. Since then, I run `git pull` after every release.
+**Working with the commits written by the pipeline** Because semantic-release pushes its own `chore(release)` commit to `master` after each release, the local copy is one commit behind after every release. Once, my push was rejected for this reason ("the remote contains work that you do not have locally"). I solved it with `git pull --rebase`, which places the local commits on top of the release commit and keeps the history linear, without a merge commit. Since then, I run `git pull` after every release.
 
-**Pull requests, issues and code review.** I did not use pull requests or issues, and no second person reviewed the code: changes went straight to `master`. I relied on automatic quality checks instead. Before each push I ran the formatter, the static checks and the tests locally (`poe format`, `poe static-checks`, `poe coverage`), and on every push GitHub Actions ran them again. This is a weakness for a team project, and I list it in the [Self-evaluation](../11-selfevaluation/).
+**Pull requests, issues and code review** Until version 1.3.1 I did not use pull requests or issues: changes went straight to `master`. I relied on automatic quality checks instead. Before each push I ran the formatter, the static checks and the tests locally (`poe format`, `poe static-checks`, `poe coverage`), and on every push GitHub Actions ran them again.
+
+For the last changes I used the full flow, with one issue for each independent problem:
+
+| Issue | Problem | Solved by |
+|-------|---------|-----------|
+| #1 | The page did not say that the result is AI-generated and not medical advice. | `feat:` commit on `feat/ai-disclaimer`, pull request #2, release 1.4.0 |
+| #3 | No test checked that the disclaimer is on the page. | `test:` commit on `test/disclaimer-and-barcode-fallback` |
+| #4 | No test covered a request with both a barcode and typed ingredients. | `test:` commit on the same branch |
+
+The commit messages contain `closes #N`, so GitHub closed each issue when its pull request was merged. The pipeline ran on each pull request before the merge. No second person reviewed the code, because I worked alone; I discuss this in the [Self-evaluation](../11-selfevaluation/).
 
 ## Implementation details
 
-**Network protocols: HTTP and HTTPS.** The browser talks to the server over HTTP, and the server talks to Open Beauty Facts and OpenRouter over HTTPS. Both external services only offer HTTP-based APIs, and the interaction is a simple request and reply. Protocols for continuous or push communication (WebSockets, MQTT, AMQP) are not needed, because the server never has to contact the browser on its own.
+**Network protocols: HTTP and HTTPS** The browser talks to the server over HTTP, and the server talks to Open Beauty Facts and OpenRouter over HTTPS. Both external services only offer HTTP-based APIs, and the interaction is a simple request and reply. Protocols for continuous or push communication (WebSockets, MQTT, AMQP) are not needed, because the server never has to contact the browser on its own.
 
-**Data representation: JSON, plus multipart for photos.** Requests and answers between browser and server are JSON, as are the answers of Open Beauty Facts and the exchange with the AI service. JSON is readable, supported natively by Python and by the browser, and needs no extra tool. The only exception is the photo upload, which is sent as a multipart form because it carries a file. The AI model is also instructed to answer in JSON, which the server parses.
+**Data representation: JSON, plus multipart for photos** Requests and answers between browser and server are JSON, as are the answers of Open Beauty Facts and the exchange with the AI service. JSON is readable, supported natively by Python and by the browser, and needs no extra tool. The only exception is the photo upload, which is sent as a multipart form because it carries a file. The AI model is also instructed to answer in JSON, which the server parses.
 
-**Database access: SQL through an ORM.** The data are simple records, so a relational database fits (see [Design](../03-design/)). SQLite is accessed through SQLAlchemy, so the code works with a Python class (`Analysis`) rather than with hand-written SQL strings. This avoids SQL injection and keeps the code short. A NoSQL database was not needed: there are no nested or variable documents and no large volumes.
+**Database access: SQL through an ORM** The data are simple records, so a relational database fits (see [Design](../03-design/)). SQLite is accessed through SQLAlchemy, so the code works with a Python class (`Analysis`) rather than with hand-written SQL strings. This avoids SQL injection and keeps the code short. A NoSQL database was not needed: there are no nested or variable documents and no large volumes.
 
-**Reuse of saved results.** Before calling the AI, the server looks in the database for an earlier analysis of the same ingredient list (`find_cached_analysis` in `database.py`, called by `analyze_with_cache` in `app.py`). The comparison is done in the database query on the lower-case text, after extra spaces have been removed from the input. The answer carries a `cached` field, which the page uses to show a short neutral note ("Saved result..."), in grey rather than green so that it is not read as a judgement of the product.
+**Reuse of saved results** Before calling the AI, the server looks in the database for an earlier analysis of the same ingredient list (`find_cached_analysis` in `database.py`, called by `analyze_with_cache` in `app.py`). The comparison is done in the database query on the lower-case text, after extra spaces have been removed from the input. The answer carries a `cached` field, which the page uses to show a short neutral note ("Saved result..."), in grey rather than green so that it is not read as a judgement of the product.
 
-**A storage bug found while adding the reuse.** I found this bug while adding the reuse of saved results. Until version 1.2.1 the flagged and beneficial ingredient lists were saved with Python's `str()`, which gives text such as `[{'name': 'Parfum', ...}]` with single quotes. This is not valid JSON, so the lists could be written but not read back. The problem had gone unnoticed because nothing read these fields before. Since 1.3.0 I save the lists with `json.dumps`. To keep the records already saved, I made the reading function try JSON first and then `ast.literal_eval`, which safely reads plain Python values without running any code; a record that cannot be read in either way is treated as missing, so a new analysis is done instead.
+**A storage bug found while adding the reuse** I found this bug while adding the reuse of saved results. Until version 1.2.1 the flagged and beneficial ingredient lists were saved with Python's `str()`, which gives text such as `[{'name': 'Parfum', ...}]` with single quotes. This is not valid JSON, so the lists could be written but not read back. The problem had gone unnoticed because nothing read these fields before. Since 1.3.0 I save the lists with `json.dumps`. To keep the records already saved, I made the reading function try JSON first and then `ast.literal_eval`, which safely reads plain Python values without running any code; a record that cannot be read in either way is treated as missing, so a new analysis is done instead.
 
-**Authentication: none for users, an API key for the AI service.** The application has no accounts. It is a single-user tool, run locally, and the history contains no personal data. The server authenticates itself to OpenRouter with an API key, which is kept in a `.env` file outside version control. The environment variable is called `GEMINI_API_KEY` for historical reasons (the first version used Gemini); it now holds an OpenRouter key. Open Beauty Facts needs no key for reading.
+**Authentication: none for users, an API key for the AI service** The application has no accounts. It is a single-user tool, run locally, and the history contains no personal data. The server authenticates itself to OpenRouter with an API key, which is kept in a `.env` file outside version control. The environment variable is called `GEMINI_API_KEY` for historical reasons (the first version used Gemini); it now holds an OpenRouter key. Open Beauty Facts needs no key for reading.
 
-**Authorization: none.** Since there are no users, there are no roles to distinguish, so RBAC or similar schemes would have no purpose. Everyone who can reach the server can use every route. This is acceptable for a local tool, but it would have to change before a public deployment (see [Future works](../12-future/)).
+**Authorization: none** Since there are no users, there are no roles to distinguish, so RBAC or similar schemes would have no purpose. Everyone who can reach the server can use every route. This is acceptable for a local tool, but it would have to change before a public deployment (see [Future works](../12-future/)).
 
 ## Technological details
 
-**Language and tools.** I wrote the server in **Python (3.10 or newer)**, because it has a mature web, database and testing ecosystem and is the language used in the course. I wrote the web page in plain **HTML, CSS and JavaScript** in a single template, without a front-end framework: the interface is one page with one form, and a framework would have been heavier than the page itself. I manage dependencies and packaging with **Poetry**, and I defined common tasks (format, checks, tests, coverage) as **poe** tasks so that they run the same way locally and in CI.
+**Language and tools** I wrote the server in **Python (3.10 or newer)**, because it has a mature web, database and testing ecosystem and is the language used in the course. I wrote the web page in plain **HTML, CSS and JavaScript** in a single template, without a front-end framework: the interface is one page with one form, and a framework would have been heavier than the page itself. I manage dependencies and packaging with **Poetry**, and I defined common tasks (format, checks, tests, coverage) as **poe** tasks so that they run the same way locally and in CI.
 
-**Libraries the application depends on.**
+**Libraries the application depends on**
 
 | Library | Why |
 |---------|-----|
@@ -56,7 +66,7 @@ The format is not only a habit: the release tool (semantic-release, see [Release
 | SQLAlchemy | ORM and connection to SQLite. |
 | python-dotenv | Reads the secret key from the `.env` file. |
 
-**Libraries used only in development.**
+**Libraries used only in development**
 
 | Library | Why |
 |---------|-----|
@@ -65,7 +75,7 @@ The format is not only a habit: the release tool (semantic-release, see [Release
 | mypy | Static type checking. |
 | poethepoet | The `poe` task runner. |
 
-**External services.**
+**External services**
 
 | Service | Why |
 |---------|-----|

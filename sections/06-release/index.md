@@ -6,11 +6,11 @@ nav_order: 7
 
 # Release
 
-## Artefacts and release process
+## Artifacts and release process
 
-**Artefacts.** Every release produces the following artefacts from the codebase:
+**Artifacts:** Every release produces the following artifacts from the codebase:
 
-| Artefact | Description | Where it is published |
+| Artifact | Description | Where it is published |
 |----------|-------------|-----------------------|
 | Python package `realbeauty` | The application code (the `artifact` package), built as a source archive and a wheel (`dist/*`). | [PyPI](https://pypi.org/project/realbeauty/) |
 | GitHub release | A tagged release with automatically generated release notes and the files of `dist/` attached. | GitHub, repository `artifact` |
@@ -18,9 +18,9 @@ nav_order: 7
 
 I chose PyPI because it is the standard repository for Python packages and is free, and GitHub because the code already lives there, so the release notes and the tags stay next to the source. I did not produce a Docker image (see [Deployment](../07-deployment/)).
 
-**How a release is made: automatically.** No release step is done by hand. The release is the last step of the CI/CD pipeline (see [CI/CD](../08-cicd/)) and works as follows:
+**How a release is made: automatically** No release step is done by hand. The release is the last step of the CI/CD pipeline (see [CI/CD](../08-cicd/)) and works as follows:
 
-1. A commit is pushed to the `master` branch.
+1. A commit is pushed to the `master` branch either by a direct push or by merging a pull request.
 2. The pipeline runs the static checks, the format check and the tests on all operating systems and Python versions.
 3. Only if all of them pass, the *deploy* job starts. It installs Node.js and runs `npx semantic-release`.
 4. semantic-release reads the commit messages since the last release and decides whether a new version is needed and which one (see *Versioning* below). If the commits contain only documentation, tests or similar changes, nothing is released.
@@ -28,7 +28,7 @@ I chose PyPI because it is the standard repository for Python packages and is fr
 
 The behaviour is defined in `release.config.mjs` and `.github/workflows/deploy.yml`. On a branch other than `master` or `main`, the release runs in *dry-run* mode: it shows what would be released without publishing anything.
 
-**One-time configuration.** To make the pipeline work, I added two secrets to the repository settings (*Settings, Secrets and variables, Actions*):
+**One-time configuration:** To make the pipeline work, I added two secrets to the repository settings (*Settings, Secrets and variables, Actions*):
 
 | Secret | Content |
 |--------|---------|
@@ -47,7 +47,7 @@ I chose it for these reasons:
 - It contains an explicit patent grant, which the shorter MIT license does not.
 - It is the license of the project template used for the course, and nothing in the project (all dependencies are under permissive licenses as well) required a different choice.
 
-There is only one artefact, so the same license applies to everything that is published. The data used at run time belong to Open Beauty Facts and keep their own license (Open Database License), and the AI models belong to their providers. Neither is distributed with the package.
+There is only one artifact, so the same license applies to everything that is published. The data used at run time belong to Open Beauty Facts and keep their own license (Open Database License), and the AI models belong to their providers. Neither is distributed with the package.
 
 ## Choice of the versioning schema
 
@@ -61,19 +61,19 @@ There is only one artefact, so the same license applies to everything that is pu
 
 Commits of type `docs`, `test`, `refactor`, `build`, `ci` and `chore` do not create a release. I did not choose date-based versioning because the version should describe the *kind* of change, not only when it happened.
 
-**Number of artefacts.** All artefacts (package, tag, GitHub release) come from the same release step and carry the same number, so there is nothing to align.
+**Number of artifacts:** All artifacts (package, tag, GitHub release) come from the same release step and carry the same number, so there is nothing to align.
 
-**Relation to the API version.** The package version (for example `1.2.1`) and the version of the HTTP API (`/api/v1`) are different things. The API version changes only when the API changes in an incompatible way; the package version changes with every release.
+**Relation to the API version:** The package version (for example `1.2.1`) and the version of the HTTP API (`/api/v1`) are different things. The API version changes only when the API changes in an incompatible way; the package version changes with every release.
 
-**How to create a new version.** There is no manual procedure:
+**How to create a new version?** There is no manual procedure:
 
 1. Make the change and commit it with a Conventional Commits message (`feat: ...` for a new feature, `fix: ...` for a bug fix; add a line `BREAKING CHANGE: ...` for an incompatible change).
-2. Push to `master`.
+2. Push to `master` or open a pull request and merge it into master when the pipeline is green.
 3. When the pipeline is green, the new version appears on PyPI and in the GitHub releases, together with the tag (for example `1.2.1`, without a `v` prefix).
 
 No release branch is needed, because only one version is maintained: the latest one.
 
-**Releases made so far.**
+**Releases made so far**
 
 | Version | Main content |
 |---------|--------------|
@@ -83,3 +83,4 @@ No release branch is needed, because only one version is maintained: the latest 
 | 1.2.1 | Fallback to alternative free models; detection of the real image type of uploaded photos. |
 | 1.3.0 | Reuse of saved results for an ingredient list already analysed; the ingredient lists stored as real JSON; history shown on the page. |
 | 1.3.1 | History shown as compact rows, one open at a time, with each product only once. |
+| 1.4.0 | A message under the result saying that it is AI-generated and not medical advice. |

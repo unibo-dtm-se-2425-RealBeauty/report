@@ -6,8 +6,6 @@ nav_order: 11
 
 # Developer Guide
 
-This guide is for a person who wants to continue the development of RealBeauty or to fix something in it. It describes how the project is organised, how to set up the development environment, and which rules to follow.
-
 ## Organisation
 
 I developed the project alone, and I am also the contact for questions: Serra Özkasap, <serra.ozkasap@studio.unibo.it>. Both repositories are in the GitHub organization `unibo-dtm-se-2425-RealBeauty`:
@@ -17,7 +15,7 @@ I developed the project alone, and I am also the contact for questions: Serra Ö
 | `artifact` | The application, its tests and the CI/CD pipeline. | `master` |
 | `report` | This report (a Jekyll website published with GitHub Pages). | `main` |
 
-I did not use issues for most of the project. A problem found by a future contributor can be reported as an issue of the `artifact` repository (tab *Issues*), giving the steps to reproduce it, what was expected and what happened. Known limitations are listed in [Self-evaluation](../11-selfevaluation/) and ideas for improvement in [Future works](../12-future/); they are a good starting point.
+I used issues only for the last changes (#1, #3 and #4), one issue for each independent problem. A problem found by a future contributor can be reported as an issue of the `artifact` repository (tab *Issues*), giving the steps to reproduce it, what was expected and what happened. Known limitations are listed in [Self-evaluation](../11-selfevaluation/) and ideas for improvement in [Future works](../12-future/); they are a good starting point.
 
 ## Development environment
 
@@ -37,7 +35,7 @@ poetry run flask --app artifact.app run
 
 The server has to be restarted after each change of the code, because the automatic reload is not enabled (the option `--debug` enables it).
 
-**Project structure.**
+**Project structure:**
 
 | Path | Content |
 |------|---------|
@@ -77,9 +75,9 @@ poetry run poe coverage
 
 ## Conventions
 
-**Code style.** The formatting is enforced by `ruff format` and the style rules by `ruff check`, so no manual decision is needed: running `poe format` is enough. Type hints are checked by `mypy`. Modules and functions are named in `snake_case`; constants in `UPPER_CASE`. Error messages shown to users are in English.
+**Code style:** The formatting is enforced by `ruff format` and the style rules by `ruff check`, so no manual decision is needed: running `poe format` is enough. Type hints are checked by `mypy`. Modules and functions are named in `snake_case`; constants in `UPPER_CASE`. Error messages shown to users are in English.
 
-**Where to put new code.**
+**Where to put new code?**
 
 - A new HTTP route goes in `app.py`, on the `api_v1` blueprint. A route that changes the behaviour of an existing one in an incompatible way requires a new version (`/api/v2`).
 - Everything that talks to an outside service goes in its own module (like `beauty_api.py` and `analyzer.py`), not in `app.py`. The API layer only coordinates.
@@ -87,9 +85,9 @@ poetry run poe coverage
 - The reuse of saved results is in `analyze_with_cache` (`app.py`). A change to how an analysis is produced (for example a new prompt or scoring rule) makes old saved results out of date; in that case the saved records should be deleted, or the lookup restricted to newer records.
 - To use other AI models, only the lists in `analyzer.py` need to be changed. The free models available on OpenRouter change often.
 
-**Tests.** Every new behaviour needs a test in `tests/`. Outside services are never called in tests: the functions that call them are replaced with `unittest.mock.patch` (see the existing tests for examples). The tests never use the real `realbeauty.db`: `test_app.py` replaces the database functions, and `test_database.py` uses a new in-memory SQLite database in each test. A test should be named after the behaviour it checks, for example `test_analyze_barcode_not_found_returns_404`. The minimum coverage is 70%, and the current value is higher (see [Validation](../05-validation/)).
+**Tests:** Every new behaviour needs a test in `tests/`. Outside services are never called in tests: the functions that call them are replaced with `unittest.mock.patch` (see the existing tests for examples). The tests never use the real `realbeauty.db`: `test_app.py` replaces the database functions, and `test_database.py` uses a new in-memory SQLite database in each test. A test should be named after the behaviour it checks, for example `test_analyze_barcode_not_found_returns_404`. The minimum coverage is 70%, and the current value is higher (see [Validation](../05-validation/)).
 
-**Commit messages.** [Conventional Commits](https://www.conventionalcommits.org/): `type: short description in the imperative`, for example `fix: retry when the AI provider is overloaded`. The type matters, because it decides the next version:
+**Commit messages:** [Conventional Commits](https://www.conventionalcommits.org/): `type: short description in the imperative`, for example `fix: retry when the AI provider is overloaded`. The type matters, because it decides the next version:
 
 | Type | Meaning | Release |
 |------|---------|---------|
@@ -101,18 +99,18 @@ An incompatible change is marked with a line `BREAKING CHANGE: ...` in the body 
 
 ## Workflow
 
-I developed most of the project directly on `master`, as described in [Development](../04-development/). A new contributor is advised to use a short-lived branch and a pull request instead; the pipeline also runs on pull requests, so the checks are done before the code reaches `master`:
+I developed most of the project directly on `master`, and the last changes with short-lived branches and pull requests, as described in [Development](../04-development/). A new contributor should follow the second way; the pipeline also runs on pull requests, so the checks are done before the code reaches `master`:
 
-1. Create a branch: `git checkout -b feat/short-name`.
+1. Open an issue that describes the problem, then create a branch: `git checkout -b feat/short-name`. Check with `git branch` that the new branch is the current one before committing.
 2. Make the change, with its tests, and run the three commands listed above.
-3. Commit with a Conventional Commits message and push the branch.
+3. Commit with a Conventional Commits message that ends with `closes #N` and push the branch (`git push -u origin <branch>`).
 4. Open a pull request towards `master` and wait for the pipeline to be green.
-5. After the merge, the pipeline runs on `master`. If the commits justify it, a new version is published automatically (see [Release](../06-release/)): no manual tagging or uploading is needed.
+5. After the merge, switch back with `git checkout master` and `git pull`. The pipeline runs on `master`. If the commits justify it, a new version is published automatically (see [Release](../06-release/)): no manual tagging or uploading is needed.
 6. Run `git pull` after each release: the pipeline adds its own `chore(release)` commit, and a later push is rejected until the local copy has it.
 
 Secrets (`PYPI_TOKEN`, `RELEASE_TOKEN`) are configured in the repository settings and must never be written in the code. The `.env` file is excluded from Git; if a key is ever committed by mistake, it has to be revoked in OpenRouter and replaced, because removing the commit is not enough.
 
-**Working on the report.** The report is edited in the `report` repository. The Markdown files are in `sections/`; the front matter at the top of each file (title, `nav_order`) must be kept. Images are in `pictures/` and are referenced with `../../pictures/<name>.png`. GitHub Pages rebuilds the website after each push to `main`, which takes a minute or two.
+**Working on the report:** The report is edited in the `report` repository. The Markdown files are in `sections/`; the front matter at the top of each file (title, `nav_order`) must be kept. Images are in `pictures/` and are referenced with `../../pictures/<name>.png`. GitHub Pages rebuilds the website after each push to `main`, which takes a minute or two.
 
 ## Tools
 

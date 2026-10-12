@@ -18,7 +18,7 @@ The software does not analyse ingredients by itself: it combines two external se
 ## How it is used
 
 1. The user gives the product in one of three ways: the **barcode**, the **ingredient list** typed or pasted, or a **photo** of the label.
-2. If a barcode is given, the system looks the product up in Open Beauty Facts. If the product is missing, the user is invited to give the ingredients in another way.
+2. If a barcode is given, the system looks the product up in Open Beauty Facts. If the product is missing, the user is invited to give the ingredients in another way (manual entry of ingredients or uploading picture of ingredients). If both a barcode and an ingredient list are given, the barcode is used first; the typed list is used only when the product is not found.
 3. If a photo is given, the system reads the ingredient list from the picture.
 4. If the same ingredient list was analysed before, the saved result is shown at once. Otherwise the list is judged by an AI model, which returns a score from 0 to 100, a short summary, the concerning ingredients (with severity and reason) and the beneficial ones.
 5. The result is shown on the page and saved in the history, which is listed at the bottom of the page.
@@ -26,7 +26,7 @@ The software does not analyse ingredients by itself: it combines two external se
 ## Use case collection
 
 **Who are the users and where are they?**
-The main users are consumers who buy personal care products (shampoo, creams, deodorants, make-up). They are often *in front of a shelf* in a shop, or at home with a product they already own. A second group is made of developers who want to call the analysis from their own programs. The roles are described in the [Requirements](../02-requirements/) section (shopper, sensitive user, integrator).
+The main users are consumers who buy personal care products (shampoo, creams, deodorants, make-up). They are often at home with a product they already own, or planning a purchase. Using the application in front of a shelf in a shop would need a phone version, which I list in Future work. A second group is made of developers who want to call the analysis from their own programs. The roles are described in the [Requirements](../02-requirements/) section (shopper, sensitive user, integrator).
 
 **When and how often do they interact with the system?**
 Occasionally and in short sessions: typically when choosing or changing a product, a few times a week at most. A single analysis takes from a few seconds to about two minutes, because the AI models used are free and can be slow or busy. The user therefore has to wait for the answer, and the page shows the elapsed time while waiting.
@@ -42,4 +42,4 @@ Yes, a history of the analyses. For every analysis the system saves the barcode 
 - *OpenRouter*: a gateway to AI models. I use only free models, so answers can be slow, and a model may be busy; the system therefore retries and falls back to other models.
 
 **What the product is not.**
-RealBeauty is an educational project. Its output comes from an AI model, may be wrong, and is not medical or dermatological advice.
+RealBeauty is an educational and based on my interest project. Its output comes from an AI model, may be wrong, and is not medical or dermatological advice. Since version 1.4.0, the page says this under every result. But again, we should be aware of this.

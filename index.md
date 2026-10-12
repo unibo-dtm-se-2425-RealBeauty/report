@@ -23,15 +23,16 @@ The ingredients can be provided in three ways: by typing the product barcode, wh
 
 The system is a Flask application with a layered client-server architecture: a web page, an application layer that coordinates the steps and a lowest layer with one module for each outside service. The HTTP API is versioned (`/api/v1`). Because free AI models are often busy, the application retries and falls back to other models before reporting an error.
 
-I verified the software with 33 automated tests (97% coverage) that replace the outside services with test doubles, and with manual acceptance tests on real products and photos. A GitHub Actions pipeline checks the code on three operating systems and four Python versions at every push and publishes new versions on PyPI and GitHub automatically from the commit messages; six releases were produced this way.
+I verified the software with 36 automated tests (97% coverage) that replace the outside services with test doubles, and with manual acceptance tests on real products and photos. A GitHub Actions pipeline checks the code on three operating systems and four Python versions at every push and publishes new versions on PyPI and GitHub automatically from the commit messages; seven releases were produced this way.
 
 This report follows the structure of the course: concept, requirements, design, development, validation, release, deployment, CI/CD, user and developer guides, self-evaluation and future work. Its main limits are those of the free tools I chose: variable speed and availability of the AI models, scores that are not fully repeatable, and products missing from the database. RealBeauty is an educational project and its results are not medical advice.
 
+
 ## Disclaimer
 
-During the preparation of this work, the author used Claude (Anthropic) to discuss design choices, to write and check code and tests, to create the diagrams, and to draft and revise the text of this report.
+During the preparation of this work, I wrote the code together with Opus 5.5. Some parts I wrote myself and Opus 5.5 checked and corrected them; for other parts I described how a feature should behave, it proposed the code and I tried it and asked for changes until it worked the way I wanted. It also helped me find and fix bugs and I discussed my technical decisions with it before taking them.
+I defined the test scenarios while building the features. I wrote the first versions of the simpler tests myself and Opus 5.5 showed me how to organise them with pytest and how to replace the outside services with test doubles. The more complex tests we wrote together, and I wrote the last three tests on my own.
+I drew five of the seven design diagrams (context map, architecture, deployment and the two activity diagrams) in draw.io and compared each one with the code. The class and sequence diagrams were generated with Mermaid, and I checked them against the code. The application itself described in this report also uses AI models at run time (through OpenRouter) to analyse ingredients and to read label photos; this is part of the product and is described in the report.
+I use Opus 5.5 to make sure I mapped everything on the report based on my local notes that I took during the project and also use for grammer corrections.
 
-After using this tool/service, the author reviewed and edited the content as needed
-and takes full responsibility for the content of the final report/artifact.
-
-The application described in this report also uses AI models at run time (through OpenRouter) to analyse ingredients and to read label photos; this is part of the product and is described in the report.
+After using this tools/services, I reviewed and edited the content as needed and take full responsibility for the content of the final report/artifact.
