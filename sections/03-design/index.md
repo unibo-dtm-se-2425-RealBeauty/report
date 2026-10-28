@@ -118,6 +118,46 @@ All communication is **synchronous request-reply** over HTTP. The browser sends 
 | 422 | Unreadable photo | The text read from the photo is empty. |
 | 503 | `ai_failed` | The AI could not answer, even after retries. |
 
+**Web API, version 1** The service offers three routes under `/api/v1`, plus the web page at `/`. Requests and answers are JSON, except the photo upload, which is a multipart form.
+
+| Method | Path | Request | Answer (200) | Errors |
+|--------|------|---------|--------------|--------|
+| `GET` | `/` | – | The web page (HTML) | – |
+| `POST` | `/api/v1/analyze` | JSON with `barcode` (string) and/or `ingredients` (string); at least one is required. If both are given, the barcode is tried first and the typed list is used only when the product is not found. | Analysis object | 400, 404 `not_found`, 503 `ai_failed` |
+| `POST` | `/api/v1/analyze-photo` | Multipart form with the field `photo` (a JPEG, PNG or WebP image) | Analysis object | 400, 422, 503 `ai_failed` |
+| `GET` | `/api/v1/history` | – | List of history entries, newest first, one per ingredient list | – |
+
+**Analysis object**
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `product_name` | string | Name from Open Beauty Facts, or `Manual Entry` / `Photo Entry` |
+| `brand` | string | Brand, or `Unknown` |
+| `score` | integer, 0–100 | Safety score |
+| `summary` | string | Two or three sentences in plain language |
+| `flagged` | list of `{name, reason, severity}` | Concerning ingredients; `severity` is `high`, `medium` or `low` |
+| `safe_highlights` | list of strings | Beneficial ingredients |
+| `cached` | boolean | `true` when a saved result was returned without a new AI analysis |
+
+**History entry:** the same fields as the analysis object except `cached`, plus `id`, `method` (`barcode`, `manual` or `photo`), `barcode` (or `null`), `ingredients_preview` (the first 60 characters of the list) and `created_at` (ISO 8601, UTC).
+
+**Errors** carry an `error` field: a short message for 400 and 422, and the codes `not_found` (404) and `ai_failed` (503) together with a `message` for the user.
+
+Example:
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"ingredients": "Aqua, Glycerin"}'
+```
+
+```json
+{"product_name": "Manual Entry", "brand": "Unknown", "score": 100,
+ "summary": "…", "flagged": [], "safe_highlights": ["Glycerin"], "cached": false}
+```
+
+An incompatible change to these fields or routes would be published under `/api/v2`, while `/api/v1` keeps working.
+
 ## Behaviour
 
 The page, the API layer and the two clients are **stateless**; only the database is **stateful**. Only the API layer changes the state, and only **after** the AI analysis has succeeded, so a failed request leaves nothing in the database.
